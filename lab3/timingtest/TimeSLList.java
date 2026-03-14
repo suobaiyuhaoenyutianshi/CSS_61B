@@ -1,13 +1,9 @@
 package timingtest;
+
 import edu.princeton.cs.algs4.Stopwatch;
 
-import java.util.ArrayList;
-
-/**
- * Created by hug.
- */
 public class TimeSLList {
-    private static void printTimingTable(AList<Integer> Ns, AList<Double> times, ArrayList<Integer> opCounts) {
+    private static void printTimingTable(AList<Integer> Ns, AList<Double> times, AList<Integer> opCounts) {
         System.out.printf("%12s %12s %12s %12s\n", "N", "time (s)", "# ops", "microsec/op");
         System.out.printf("------------------------------------------------------------\n");
         for (int i = 0; i < Ns.size(); i += 1) {
@@ -19,47 +15,42 @@ public class TimeSLList {
         }
     }
 
+    public static void main(String[] args) {
+        timeGetLast();
+    }
 
-        // TODO: YOUR CODE HERE
-        // 已有的 printTimingTable 方法（这里省略，保持原样）
+    public static void timeGetLast() {
+        int[] testSizes = {1000, 2000, 4000, 800, 19000};
+        int M = 10000; // 每个 N 执行 getLast 的次数
 
-        public static void main (String[]args){
-            timeAListConstruction();
-        }
+        AList<Integer> Ns = new AList<>();
+        AList<Double> times = new AList<>();
+        AList<Integer> opCounts = new AList<>();
 
-        public static void timeAListConstruction () {
-            // 定义要测试的列表大小 N
-            int[] testSizes = {1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000};
-
-            // 准备存储数据的 ArrayList
-            AList<Integer> Ns = new AList<>();
-            AList<Double> times = new AList<>();
-            ArrayList<Integer> opCounts = new ArrayList<>();
-
-            // 对每一个 N 进行测试
-            for (int N : testSizes) {
-                // 创建一个新的 AList
-                AList<Integer> list = new AList<>();
-
-                // 开始计时
-                Stopwatch sw = new Stopwatch();
-
-                // 执行 N 次 addLast 操作
-                for (int i = 0; i < N; i++) {
-                    list.addLast(i); // 添加任意整数
-                }
-
-                // 结束计时，获取耗时（秒）
-                double timeInSeconds = sw.elapsedTime();
-
-                // 记录数据
-                Ns.add(N);
-                times.add(timeInSeconds);
-                opCounts.add(N); // 操作次数就是 N
+        for (int N : testSizes) {
+            // 1. 创建 SLList 并添加 N 个元素
+            SLList<Integer> list = new SLList<>();
+            for (int i = 0; i < N; i++) {
+                list.addLast(i);
             }
 
-            // 打印表格
-            printTimingTable(Ns, times, opCounts);
+            // 2. 开始计时
+            Stopwatch sw = new Stopwatch();
+
+            // 3. 执行 M 次 getLast
+            for (int j = 0; j < M; j++) {
+                list.getLast();
+            }
+
+            // 4. 记录时间
+            double timeInSeconds = sw.elapsedTime();
+
+            // 5. 存储数据
+            Ns.addLast(N);
+            times.addLast(timeInSeconds);
+            opCounts.addLast(M);
         }
 
+        printTimingTable(Ns, times, opCounts);
+    }
 }
