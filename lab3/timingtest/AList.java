@@ -63,4 +63,7 @@ public class AList<Item> {
         size = size - 1;
         return x;
     }
+
+    public void add(Item n) {
+    }
 }
