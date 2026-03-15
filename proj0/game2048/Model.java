@@ -138,6 +138,14 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();
+        for(int col = 0; col < size; col++){
+            for (int row = 0; row < size; row++){
+                if(b.tile(col, row) == null){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +156,16 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();
+        for(int col = 0; col < size; col++){
+
+            for(int row = 0; row < size; row++){
+                Tile t = b.tile(col, row);
+                if(t != null && b.tile(col, row).value() == MAX_PIECE){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -159,9 +177,54 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
-        return false;
+        int size = b.size();
+       for(int col = 0; col < size; col++){
+
+           for(int row = 0;row < size; row++ ){
+              Tile t = b.tile(col, row);
+              //可推断除最后一行：只能查左，其余行左与下
+               if(emptySpaceExists(b)){
+                if(col != (size - 1)){
+                    return helpCheckMost(col, row, b, size);
+               }
+                else if (col == (size -1)) {
+                    return helpLast(col, row, b, size);
+               }
+           }
+       }
+       return false;
+    }
+    //检测棋盘是否为空emptySpaceExists
+    //helpCheckMost,查除最后一行的其他行
+    //helplastcol
+    public static boolean helpCheckMost(int col, int row,Board b, int size){
+        int self = b.tile(col,row).value();
+        int below = b.tile(col + 1, row).value();
+       if(row < (size-1)){
+           int left = b.tile(col, row+1).value();
+           if( self == left || self == below){
+               return true;
+           }
+       }
+       //最后的row
+       else if (row == size-1) {
+           if(self == below){
+               return true;
+           }
+       }
+       return  false;
     }
 
+    public static boolean helpLast(int col, int row,Board b, int size){
+        int self = b.tile(col,row).value();
+        if(row < (size - 1)){
+            int left = b.tile(col, row+1).value();
+            if(left == self){
+                return true;
+            }
+        }
+        return  false;
+    }
 
     @Override
      /** Returns the model as a string, used for debugging. */
