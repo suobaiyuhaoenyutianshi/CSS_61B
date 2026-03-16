@@ -124,97 +124,87 @@ public class Model extends Observable {
         return changed;
     }
     //想视觉方向北移动
-    public boolean visualNorth(int size){
+    // 从北向南处理，每个 tile 向上查找目标位置
+    public boolean visualNorth(int size) {
         boolean change = false;
-        for(int col = 0; col < size ;col++){
-            int moveDistance = 0;//目的修改移动范围,
-            boolean []merge = new boolean[size];//
-            for(int row = 1; row < size; row++){
-                Tile t = board.tile(col,row);//视觉坐标->找到绝对的对象Tile
-                if(t == null)continue;
-                int changeLocation = tileLocation(t,moveDistance,col,row,merge);
+        for (int col = 0; col < size; col++) {
+            int moveDistance = size - 1;          // 当前列最北的可放置行（初始为最北）
+            boolean[] merge = new boolean[size];  // 标记某行是否已合并（避免二次合并）
+            for (int row = size - 1; row >= 0; row--) { // 从北向南遍历
+                Tile t = board.tile(col, row);
+                if (t == null) continue;
+                int changeLocation = tileLocation(t, moveDistance, col, row, merge);
                 if (changeLocation != row) {
-                    change = true;
-
+                    change = true;                 // 有棋子移动或合并
                 }
-                moveDistance = changeLocation;
-
+                moveDistance = changeLocation - 1; // 更新可放置的最北位置（当前行已被占）
             }
-
-
         }
-        if(change){
-            return true;
-        }
-        return false;
-    }
-//movDis格子运动的上限
-//一直向上移动，前提不到上限，还有视觉北的被标记即在singnTile里，结束这个格子,注move(...)为真将该产生格子加入这计划不行
-    //col>0,且负责move
-    public int tileLocation(Tile t,int moveDistance,int col, int row,boolean[] merge ){
-        //查上方是否有值相同的,返回该移动的位置,前提返回的row不等
-        int changLocation = findEqualValue(t,moveDistance,col,row,merge);
-        if(changLocation!=row){
-            board.move(col,changLocation,t);
-            return changLocation;
-        }
-        //上面没返回，情况1只有不同的,或合并过或都是fanghunull
-        changLocation = findDifferent(t,moveDistance,col,row,merge);
-        if(changLocation!=row){
-            board.move(col,changLocation,t);
-            return changLocation;
-        }
-        //前面是空，movDis格子运动的上限
-        changLocation = aTleaseNull(moveDistance,col,row);
-        if(changLocation!=row){
-            board.move(col,changLocation,t);
-            return changLocation;
-        }
-        //还找不到，只能不移
-        return row;
+        return change;
     }
 
-    public int findEqualValue(Tile t,int moveDistance,int col, int row,boolean[] merge ){
-        int find = row - 1;
-        while(find >= moveDistance){
-            Tile t2 = board.tile(col,find);
-            if(t2 != null){
-                if (t2.value()==t.value() && !merge[find]){
-                    merge[find] = true;
-                    this.score += t2.value()*2;
-                    return find;
+    // 查找可合并的相同值（向上找第一个相同且未合并的 tile）
+    public int findEqualValue(Tile t, int moveDistance, int col, int row, boolean[] merge) {
+        int find = row + 1; // 从当前行的上一行开始
+        while (find <= moveDistance) {
+            Tile t2 = board.tile(col, find);
+            if (t2 != null) {
+                if (t2.value() == t.value() && !merge[find]) {
+                    merge[find] = true;               // 标记该位置已合并
+                    this.score += t2.value() * 2;      // 加上新方块的值
+                    return find;                       // 合并到 find 位置
                 }
             }
-            find--;
+            find++;
         }
-        return row;
+        return row; // 未找到可合并的
     }
 
-
-    public int findDifferent(Tile t,int moveDistance,int col, int row,boolean[] merge ){
-        int find = row - 1;
-        while(find >= moveDistance){
-            Tile t2 = board.tile(col,find);
-            if(t2 != null){
-                // 遇到不同值，应放在 find+1 处
-                int target = find + 1;
-                if (target <= row && target < row) { // 确保小于当前行
+    // 遇到不同值阻挡时，放在阻挡块的下方（即 find-1）
+    public int findDifferent(Tile t, int moveDistance, int col, int row, boolean[] merge) {
+        int find = row + 1;
+        while (find <= moveDistance) {
+            Tile t2 = board.tile(col, find);
+            if (t2 != null) {
+                int target = find - 1; // 放在这个阻挡块的下方
+                if (target >= row) {
                     return target;
                 } else {
-                    return row; // 实际上 target 可能等于 row，但此时无需移动
+                    return row; // 理论上不会执行
                 }
             }
-            find--;
+            find++;
         }
         return row;
     }
 
-    public int aTleaseNull(int moveDistance,int col,int row){
-
-        for(int startLocation = moveDistance;startLocation < row;startLocation++){
-            if(board.tile(col, startLocation) == null){
-                return startLocation;
+    // 向上找第一个空位
+    public int aTleastNull(int moveDistance, int col, int row) {
+        for (int start = row + 1; start <= moveDistance; start++) {
+            if (board.tile(col, start) == null) {
+                return start;
             }
+        }
+        return row;
+    }
+    public int tileLocation(Tile t, int moveDistance, int col, int row, boolean[] merge) {
+        // 1. 尝试合并
+        int changLocation = findEqualValue(t, moveDistance, col, row, merge);
+        if (changLocation != row) {
+            board.move(col, changLocation, t);
+            return changLocation;
+        }
+        // 2. 尝试处理不同值阻挡
+        changLocation = findDifferent(t, moveDistance, col, row, merge);
+        if (changLocation != row) {
+            board.move(col, changLocation, t);
+            return changLocation;
+        }
+        // 3. 尝试找空位
+        changLocation = aTleastNull(moveDistance, col, row);
+        if (changLocation != row) {
+            board.move(col, changLocation, t);
+            return changLocation;
         }
         return row;
     }
