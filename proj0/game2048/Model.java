@@ -1,5 +1,5 @@
 package game2048;
-
+import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.Observable;
 
@@ -95,7 +95,7 @@ public class Model extends Observable {
     }
 
     /** Tilt the board toward SIDE. Return true iff this changes the board.
-     *
+     *将棋盘向 SIDE 方向倾斜。如果棋盘因此发生变化，则返回 true 。*这是目的
      * 1. If two Tile objects are adjacent in the direction of motion and have
      *    the same value, they are merged into one Tile of twice the original
      *    value and that new value is added to the score instance variable
@@ -112,15 +112,112 @@ public class Model extends Observable {
 
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
-        // changed local variable to true.
-
+        // changed local variable to true.修改 this.board（或许还有 this.score），以考虑向侧面 SIDE 倾斜的情况。如果棋盘发生了变化，将 changed 局部变量设置为 true。
+        board.setViewingPerspective(side);//改变实例的side，为视觉
+        int size = board.size();
+        changed = visualNorth(size);
         checkGameOver();
         if (changed) {
             setChanged();
         }
+        board.setViewingPerspective(Side.NORTH);//最后要改回来
         return changed;
     }
+    //想视觉方向北移动
+    public boolean visualNorth(int size){
+        boolean change = false;
+        for(int col = 0; col < size ;col++){
+            int moveDistance = 0;//目的修改移动范围,
+            boolean []merge = new boolean[size];//
+            for(int row = 1; row < size; row++){
+                Tile t = board.tile(col,row);//视觉坐标->找到绝对的对象Tile
+                if(t == null)continue;
+                int changeLocation = tileLocation(t,moveDistance,col,row,merge);
+                if (changeLocation != row) {
+                    change = true;
 
+                }
+                moveDistance = changeLocation;
+
+            }
+
+
+        }
+        if(change){
+            return true;
+        }
+        return false;
+    }
+//movDis格子运动的上限
+//一直向上移动，前提不到上限，还有视觉北的被标记即在singnTile里，结束这个格子,注move(...)为真将该产生格子加入这计划不行
+    //col>0,且负责move
+    public int tileLocation(Tile t,int moveDistance,int col, int row,boolean[] merge ){
+        //查上方是否有值相同的,返回该移动的位置,前提返回的row不等
+        int changLocation = findEqualValue(t,moveDistance,col,row,merge);
+        if(changLocation!=row){
+            board.move(col,changLocation,t);
+            return changLocation;
+        }
+        //上面没返回，情况1只有不同的,或合并过或都是fanghunull
+        changLocation = findDifferent(t,moveDistance,col,row,merge);
+        if(changLocation!=row){
+            board.move(col,changLocation,t);
+            return changLocation;
+        }
+        //前面是空，movDis格子运动的上限
+        changLocation = aTleaseNull(moveDistance,col,row);
+        if(changLocation!=row){
+            board.move(col,changLocation,t);
+            return changLocation;
+        }
+        //还找不到，只能不移
+        return row;
+    }
+
+    public int findEqualValue(Tile t,int moveDistance,int col, int row,boolean[] merge ){
+        int find = row - 1;
+        while(find >= moveDistance){
+            Tile t2 = board.tile(col,find);
+            if(t2 != null){
+                if (t2.value()==t.value() && !merge[find]){
+                    merge[find] = true;
+                    this.score += t2.value()*2;
+                    return find;
+                }
+            }
+            find--;
+        }
+        return row;
+    }
+
+
+    public int findDifferent(Tile t,int moveDistance,int col, int row,boolean[] merge ){
+        int find = row - 1;
+        while(find >= moveDistance){
+            Tile t2 = board.tile(col,find);
+            if(t2 != null){
+                // 遇到不同值，应放在 find+1 处
+                int target = find + 1;
+                if (target <= row && target < row) { // 确保小于当前行
+                    return target;
+                } else {
+                    return row; // 实际上 target 可能等于 row，但此时无需移动
+                }
+            }
+            find--;
+        }
+        return row;
+    }
+
+    public int aTleaseNull(int moveDistance,int col,int row){
+
+        for(int startLocation = moveDistance;startLocation < row;startLocation++){
+            if(board.tile(col, startLocation) == null){
+                return startLocation;
+            }
+        }
+        return row;
+    }
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
      */
@@ -177,56 +274,34 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        return emptySpaceExists(b) || hasAdjacentEqual(b);
+    }
+    private static boolean hasAdjacentEqual(Board b) {
         int size = b.size();
-       for(int col = 0; col < size; col++){
+        for (int col = 0; col < size; col++) {
+            for (int row = 0; row < size; row++) {
+                Tile t = b.tile(col, row);
+                if (t == null) continue; // 空格不参与合并
+                int val = t.value();
 
-           for(int row = 0;row < size; row++ ){
-              Tile t = b.tile(col, row);
-              //可推断除最后一行：只能查左，其余行左与下
-               if(emptySpaceExists(b)){
-                if(col != (size - 1)){
-                    return helpCheckMost(col, row, b, size);
-               }
-                else if (col == (size -1)) {
-                    return helpLast(col, row, b, size);
-               }
-           }
-       }
-       return false;
-    }
-    //检测棋盘是否为空emptySpaceExists
-    //helpCheckMost,查除最后一行的其他行
-    //helplastcol
-    public static boolean helpCheckMost(int col, int row,Board b, int size){
-        int self = b.tile(col,row).value();
-        int below = b.tile(col + 1, row).value();
-       if(row < (size-1)){
-           int left = b.tile(col, row+1).value();
-           if( self == left || self == below){
-               return true;
-           }
-       }
-       //最后的row
-       else if (row == size-1) {
-           if(self == below){
-               return true;
-           }
-       }
-       return  false;
-    }
-
-    public static boolean helpLast(int col, int row,Board b, int size){
-        int self = b.tile(col,row).value();
-        if(row < (size - 1)){
-            int left = b.tile(col, row+1).value();
-            if(left == self){
-                return true;
+                // 检查右边
+                if (col + 1 < size) {
+                    Tile right = b.tile(col + 1, row);
+                    if (right != null && right.value() == val) {
+                        return true;
+                    }
+                }
+                // 检查上边（根据你的坐标系，row+1 可能表示向上）
+                if (row + 1 < size) {
+                    Tile above = b.tile(col, row + 1);
+                    if (above != null && above.value() == val) {
+                        return true;
+                    }
+                }
             }
         }
-        return  false;
+        return false;
     }
-
-    @Override
      /** Returns the model as a string, used for debugging. */
     public String toString() {
         Formatter out = new Formatter();
