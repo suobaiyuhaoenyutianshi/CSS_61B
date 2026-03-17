@@ -134,10 +134,10 @@ public class Model extends Observable {
                 Tile t = board.tile(col, row);
                 if (t == null) continue;
                 int changeLocation = tileLocation(t, moveDistance, col, row, merge);
-                if (changeLocation != row) {
+                 if (changeLocation != row) {
                     change = true;                 // 有棋子移动或合并
                 }
-                moveDistance = changeLocation - 1; // 更新可放置的最北位置（当前行已被占）
+                moveDistance = changeLocation ; // 更新可放置的最北位置（当前行已被占）
             }
         }
         return change;
