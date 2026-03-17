@@ -110,7 +110,7 @@ public class Model extends Observable {
         System.out.println("tilt called with side: " + side);
         boolean changed;
         changed = false;
-//
+
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.修改 this.board（或许还有 this.score），以考虑向侧面 SIDE 倾斜的情况。如果棋盘发生了变化，将 changed 局部变量设置为 true。
