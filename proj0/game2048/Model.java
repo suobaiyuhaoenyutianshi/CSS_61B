@@ -180,9 +180,10 @@ public class Model extends Observable {
 
     // 向上找第一个空位
     public int aTleastNull(int moveDistance, int col, int row) {
-        for (int start = row + 1; start <= moveDistance; start++) {
-            if (board.tile(col, start) == null) {
-                return start;
+
+        for (int lit = moveDistance;lit > row;lit--) {
+            if (board.tile(col, lit) == null) {
+                return lit;
             }
         }
         return row;
