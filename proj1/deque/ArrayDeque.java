@@ -91,26 +91,42 @@ public class ArrayDeque<T> {
 
 //️内存使用与元素数量成比例：当数组长度≥16时，使用率不得低于25%（低于则缩容）
   public void  shrinkCapacity(){
-      /* if(this.items.length >= 16){
-           if(this.size * 4 < this.items.length){
-               T[] newCapacity = (T[]) new Object[this.size];
-               System.arraycopy(this.items,0,newCapacity,0,this.size);
-               this.items = newCapacity;
-           }
-       }*/
+     int capacity = this.items.length;
+     if( this.size*4 < capacity &&this.size >16){
+         int newCapacity = capacity / 2;
+         if(newCapacity < 8)newCapacity =8;
+         resize(newCapacity);
+     }
 
   }
+    public int size() {
+        return size;
+    }
+    public boolean isEmpty() {
+        return size == 0;
+    }
 
-
+    public void printDeque() {
+        for (int i = 0; i < size; i++) {
+            System.out.print(get(i) + " ");
+        }
+        System.out.println();
+    }
+    @Override
+    public String toString(){
+        String[] strArr = new String[this.size];
+        for(int i =0;i < this.size;i++){
+            strArr[i] = get(i).toString();
+        }
+        return "[" + String.join(",",strArr) + "]";
+    }
 
     public static void main(String[] args){
         ArrayDeque<Integer> test = new ArrayDeque<>();
-        test.addLast(1);
-        test.addLast(2);
-        test.addLast(3);
-        test.addFirst(0);
-        test.addFirst(-1);
-        test.resize(5);
+        for(int i =0;i<10;i++)test.addLast(i);
+        for(int i =0;i<10;i++)test.addFirst(i);
+        test.printDeque();
+        System.out.println(test);
     }
 
 
