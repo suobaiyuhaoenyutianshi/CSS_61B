@@ -84,7 +84,7 @@ public class ArrayDeque<T> implements Iterable<T>{
         if(isEmpty())return null;
         T curr = this.items[this.first];
         this.items[first] = null;
-
+        if(this.last == this.first)this.last = 0;
         if(this.first != this.items.length-1){
             this.first++;
         }
@@ -100,7 +100,7 @@ public class ArrayDeque<T> implements Iterable<T>{
         if(isEmpty())return null;
         T curr = this.items[last];
         this.items[last] = null;
-        if (first == last)first--;
+        if (first == last)first =0;
         this.last--;
         this.size--;
         shrinkCapacity();
