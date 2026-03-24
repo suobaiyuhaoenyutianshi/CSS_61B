@@ -1,4 +1,7 @@
 package deque;
+
+import java.util.Iterator;
+
 /*核心规则：
 
         ⭐️初始数组大小为8
@@ -23,7 +26,7 @@ T removeFirst() / T removeLast()：删除并返回首/尾元素，空时返回nu
 T get(int index)：获取索引处元素（0为队首），空返回null，⭐️不得修改deque
 
 额外要求：⭐️实现Iterator<T> iterator()（使Deque可迭代）和⭐️boolean equals(Object o)（内容顺序相同*/
-public class ArrayDeque<T> {
+public class ArrayDeque<T> implements Iterable<T>{
     private T[] items;
     private int size;
     private int last;//记录最后的
@@ -76,7 +79,32 @@ public class ArrayDeque<T> {
 
     }
 
-//重组数组
+    public T removeFirst(){
+        if(isEmpty())return null;
+        T curr = this.items[this.first];
+        this.items[first] = null;
+        if(this.first != this.items.length-1){
+            this.first++;
+        }
+        else if (this.first == this.items.length-1){
+       this.first = 0;
+        }
+        this.size--;
+        shrinkCapacity();
+        return curr;
+    }
+
+    public T removeLast(){
+        if(isEmpty())return null;
+        T curr = this.items[last];
+        this.items[last] = null;
+        this.last--;
+        this.size--;
+        shrinkCapacity();
+        return curr;
+    }
+
+    //重组数组
     public void resize(int capacity){
         T[] newArr = (T[]) new Object[capacity];
         //要将last =this.size -1,first = 0
@@ -99,6 +127,7 @@ public class ArrayDeque<T> {
      }
 
   }
+
     public int size() {
         return size;
     }
@@ -120,13 +149,57 @@ public class ArrayDeque<T> {
         }
         return "[" + String.join(",",strArr) + "]";
     }
+    @Override
+    public Iterator<T> iterator(){
+        return new Iterator<T>() {
+            private int curr = 0;
+            @Override
+            public boolean hasNext() {
+                return curr < size;
+            }
+
+            @Override
+            public T next() {
+               if(!hasNext()){
+                   throw new ArrayIndexOutOfBoundsException();
+               }
+               T item = get(curr);
+               curr++;
+               return item;
+            }
+        };
+    }
+
+    // equals
+    @Override
+    public boolean equals(Object o){
+        if(o == null || !(o instanceof ArrayDeque))return false;
+        if(o == this)return true;
+        ArrayDeque<?> other =(ArrayDeque<?>) o;
+        int i =0;
+        while (i < this.size){
+            if(other.get(i)!=this.get(i)){
+                return false;
+            }
+            i++;
+        }
+     return true;
+    }
 
     public static void main(String[] args){
         ArrayDeque<Integer> test = new ArrayDeque<>();
         for(int i =0;i<10;i++)test.addLast(i);
         for(int i =0;i<10;i++)test.addFirst(i);
+      //  test.resize(20);
         test.printDeque();
         System.out.println(test);
+        test.removeFirst();
+        test.removeFirst();
+        test.removeFirst();
+        test.removeFirst();
+        test.removeFirst();
+        test.removeFirst();
+        test.removeLast();
     }
 
 
