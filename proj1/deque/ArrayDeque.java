@@ -54,6 +54,7 @@ public class ArrayDeque<T> {
 
         this.items[curr] = item;
         this.first = curr;
+        this.size++;
     }
     //获得顺序的
     public T get(int i){
@@ -67,10 +68,10 @@ public class ArrayDeque<T> {
             return items[i - startNum];
         }
         //若有插入前面
-        else { //                         0
-            //这是加开头的的零元素的前一个位置| | |
+        else { //                        0
+            //这是加开头的的零元素的一个位置| | |
             int startfrontFirstnum = this.items.length - startNum;
-            return this.items[startfrontFirstnum + (i +1)];
+            return this.items[startfrontFirstnum + i];
         }
 
     }
@@ -79,7 +80,12 @@ public class ArrayDeque<T> {
     public void resize(int capacity){
         T[] newArr = (T[]) new Object[capacity];
         //要将last =this.size -1,first = 0
+        for(int i = 0;i < this.size;i++){
+            newArr[i] = get(i);
+        }
         this.items = newArr;
+        this.last = this.size - 1;
+        this.first = 0;
     }
 
 
@@ -104,7 +110,7 @@ public class ArrayDeque<T> {
         test.addLast(3);
         test.addFirst(0);
         test.addFirst(-1);
-
+        test.resize(5);
     }
 
 
