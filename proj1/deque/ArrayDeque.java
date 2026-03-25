@@ -212,29 +212,12 @@ public class ArrayDeque<T> implements Iterable<T>{
         if(other.size != this.size)return false;
         int i =0;
         while (i < this.size){
-            if(other.get(i)!=this.get(i)){
+            if(!other.get(i).equals(this.get(i))){
                 return false;
             }
             i++;
         }
      return true;
     }
-
-    public static void main(String[] args){
-        ArrayDeque<Integer> test = new ArrayDeque<>();
-        for(int i =0;i<10;i++)test.addLast(i);
-        for(int i =0;i<10;i++)test.addFirst(i);
-      //  test.resize(20);
-        test.printDeque();
-        System.out.println(test);
-        test.removeFirst();
-        test.removeFirst();
-        test.removeFirst();
-        test.removeFirst();
-        test.removeFirst();
-        test.removeFirst();
-        test.removeLast();
-    }
-
 
 }
