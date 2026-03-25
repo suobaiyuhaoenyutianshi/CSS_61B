@@ -153,7 +153,7 @@ public class ArrayDeque<T> implements Iterable<T>,Deque<T> {
         this.last = this.size - 1;
         this.first = 0;
     }
-
+/
 
     //️内存使用与元素数量成比例：当数组长度≥16时，使用率不得低于25%（低于则缩容）
     public void shrinkCapacity() {
