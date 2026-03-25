@@ -45,11 +45,16 @@ public class ArrayDeque<T> implements Iterable<T>{
         int startnum = this.items.length - this.first;
         if(this.first == 0 || this.first == this.last)startnum = 0;
         if((this.size - startnum) ==0)curr = 0;
+
+        if(curr >= this.items.length){
+            curr = curr - this.items.length ;
+        }
         items[curr] = item;
         this.last = curr;
         this.size++;
 
     }
+
     public void addFirst(T item){
         if(this.size == items.length){
             resize(this.size * 2);
@@ -112,7 +117,10 @@ public class ArrayDeque<T> implements Iterable<T>{
     public T removeLast(){
         if(isEmpty())return null;
         T curr = this.items[last];
-        this.items[last] = null;
+        int clat = last;
+        if(last== 0 && (this.size - (this.items.length - this.first)) == 0)curr = items[this.items.length - 1];
+
+        this.items[] = null;
         if (first == last)first =0;
         this.last--;
         this.size--;
