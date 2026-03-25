@@ -118,15 +118,21 @@ public class ArrayDeque<T> implements Iterable<T>{
         if(isEmpty())return null;
         T curr = this.items[last];
         int clat = last;
-        if(last== 0 && (this.size - (this.items.length - this.first)) == 0)curr = items[this.items.length - 1];
-
-        this.items[] = null;
+        if(last== 0 && (this.size - (this.items.length - this.first)) == 0) {
+            curr = items[this.items.length - 1];
+            clat = this.items.length - 1;
+        }
+        this.items[clat] = null;
         if (first == last)first =0;
-        this.last--;
+        this.last = clat-1;
         this.size--;
         shrinkCapacity();
         if(last < 0){
             this.last = this.items.length + last;
+        }
+        if(this.size == 0){
+            this.last=0;
+            this.first=0;
         }
         return curr;
     }
@@ -203,6 +209,7 @@ public class ArrayDeque<T> implements Iterable<T>{
         if(o == null || !(o instanceof ArrayDeque))return false;
         if(o == this)return true;
         ArrayDeque<?> other =(ArrayDeque<?>) o;
+        if(other.size != this.size)return false;
         int i =0;
         while (i < this.size){
             if(other.get(i)!=this.get(i)){
