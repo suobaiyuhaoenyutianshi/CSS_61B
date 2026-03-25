@@ -42,7 +42,9 @@ public class ArrayDeque<T> implements Iterable<T>{
             resize(this.size * 2);
         }
         int curr = last +1;
-        if(this.items[0]==null)curr = 0;
+        int startnum = this.items.length - this.first;
+        if(this.first == 0 || this.first == this.last)startnum = 0;
+        if((this.size - startnum) ==0)curr = 0;
         items[curr] = item;
         this.last = curr;
         this.size++;
@@ -66,7 +68,7 @@ public class ArrayDeque<T> implements Iterable<T>{
         //加到前面的数量
         int startNum = this.size - (this.last +1);
         //插入尾巴
-        if(this.first != 0) {
+        if(this.first != 0 && this.first != this.last) {
             int lastNum = this.items.length - this.first;
             startNum = lastNum;
         }
@@ -75,6 +77,7 @@ public class ArrayDeque<T> implements Iterable<T>{
         //顺序头
 
         if(i >(startNum - 1)){
+            if(this.first == this.last)return items[first + i];
             return items[i - startNum];
         }
         //若有插入前面
@@ -114,6 +117,9 @@ public class ArrayDeque<T> implements Iterable<T>{
         this.last--;
         this.size--;
         shrinkCapacity();
+        if(last < 0){
+            this.last = this.items.length + last;
+        }
         return curr;
     }
 
