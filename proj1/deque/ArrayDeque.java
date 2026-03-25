@@ -26,28 +26,34 @@ T removeFirst() / T removeLast()：删除并返回首/尾元素，空时返回nu
 T get(int index)：获取索引处元素（0为队首），空返回null，⭐️不得修改deque
 
 额外要求：⭐️实现Iterator<T> iterator()（使Deque可迭代）和⭐️boolean equals(Object o)（内容顺序相同*/
-public class ArrayDeque<T> implements Iterable<T>{
+
+
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Iterable<T>,Deque<T> {
     private T[] items;
     private int size;
     private int last;//记录最后的
     private int first;
-    public ArrayDeque(){
+
+    public ArrayDeque() {
         items = (T[]) new Object[8];///////////////
-        this.size =0;
+        this.size = 0;
         this.last = 0;//记录位置
         this.first = 0;
     }
-    public void addLast(T item){
-        if(this.size == items.length){
+
+    public void addLast(T item) {
+        if (this.size == items.length) {
             resize(this.size * 2);
         }
-        int curr = last +1;
+        int curr = last + 1;
         int startnum = this.items.length - this.first;
-        if(this.first == 0 || this.first == this.last)startnum = 0;
-        if((this.size - startnum) ==0)curr = 0;
+        if (this.first == 0 || this.first == this.last) startnum = 0;
+        if ((this.size - startnum) == 0) curr = 0;
 
-        if(curr >= this.items.length){
-            curr = curr - this.items.length ;
+        if (curr >= this.items.length) {
+            curr = curr - this.items.length;
         }
         items[curr] = item;
         this.last = curr;
@@ -55,34 +61,34 @@ public class ArrayDeque<T> implements Iterable<T>{
 
     }
 
-    public void addFirst(T item){
-        if(this.size == items.length){
+    public void addFirst(T item) {
+        if (this.size == items.length) {
             resize(this.size * 2);
         }
-        int curr = this.first -1;
-        if(this.first == 0)curr = this.items.length -1;
+        int curr = this.first - 1;
+        if (this.first == 0) curr = this.items.length - 1;
 
         this.items[curr] = item;
         this.first = curr;
         this.size++;
     }
+
     //获得顺序的
-    public T get(int i){
-        if(i < 0 ||i >= this.size)throw new ArrayIndexOutOfBoundsException("越界");
+    public T get(int i) {
+        if (i < 0 || i >= this.size) throw new ArrayIndexOutOfBoundsException("越界");
 
         //加到前面的数量
-        int startNum = this.size - (this.last +1);
+        int startNum = this.size - (this.last + 1);
         //插入尾巴
-        if(this.first != 0 && this.first != this.last) {
+        if (this.first != 0 && this.first != this.last) {
             int lastNum = this.items.length - this.first;
             startNum = lastNum;
-        }
-        else startNum = 0;
+        } else startNum = 0;
 
         //顺序头
 
-        if(i >(startNum - 1)){
-            if(this.first == this.last)return items[first + i];
+        if (i > (startNum - 1)) {
+            if (this.first == this.last) return items[first + i];
             return items[i - startNum];
         }
         //若有插入前面
@@ -94,54 +100,53 @@ public class ArrayDeque<T> implements Iterable<T>{
 
     }
 
-    public T removeFirst(){
-        if(isEmpty())return null;
+    public T removeFirst() {
+        if (isEmpty()) return null;
         T curr = this.items[this.first];
         this.items[first] = null;
-        if(this.first != this.items.length-1){
+        if (this.first != this.items.length - 1) {
             this.first++;
 
-        }
-        else if (this.first == this.items.length-1){
-       this.first = 0;
+        } else if (this.first == this.items.length - 1) {
+            this.first = 0;
         }
         this.size--;
-        if(this.size == 0){
-            this.last=0;
-            this.first=0;
+        if (this.size == 0) {
+            this.last = 0;
+            this.first = 0;
         }
         shrinkCapacity();
         return curr;
     }
 
-    public T removeLast(){
-        if(isEmpty())return null;
+    public T removeLast() {
+        if (isEmpty()) return null;
         T curr = this.items[last];
         int clat = last;
-        if(last== 0 && (this.size - (this.items.length - this.first)) == 0) {
+        if (last == 0 && (this.size - (this.items.length - this.first)) == 0) {
             curr = items[this.items.length - 1];
             clat = this.items.length - 1;
         }
         this.items[clat] = null;
-        if (first == last)first =0;
-        this.last = clat-1;
+        if (first == last) first = 0;
+        this.last = clat - 1;
         this.size--;
         shrinkCapacity();
-        if(last < 0){
+        if (last < 0) {
             this.last = this.items.length + last;
         }
-        if(this.size == 0){
-            this.last=0;
-            this.first=0;
+        if (this.size == 0) {
+            this.last = 0;
+            this.first = 0;
         }
         return curr;
     }
 
     //重组数组
-    public void resize(int capacity){
+    public void resize(int capacity) {
         T[] newArr = (T[]) new Object[capacity];
         //要将last =this.size -1,first = 0
-        for(int i = 0;i < this.size;i++){
+        for (int i = 0; i < this.size; i++) {
             newArr[i] = get(i);
         }
         this.items = newArr;
@@ -150,20 +155,21 @@ public class ArrayDeque<T> implements Iterable<T>{
     }
 
 
-//️内存使用与元素数量成比例：当数组长度≥16时，使用率不得低于25%（低于则缩容）
-  public void  shrinkCapacity(){
-     int capacity = this.items.length;
-     if( this.size*4 < capacity &&this.size >16){
-         int newCapacity = capacity / 2;
-         if(newCapacity < 8)newCapacity =8;
-         resize(newCapacity);
-     }
+    //️内存使用与元素数量成比例：当数组长度≥16时，使用率不得低于25%（低于则缩容）
+    public void shrinkCapacity() {
+        int capacity = this.items.length;
+        if (this.size * 4 < capacity && this.size > 16) {
+            int newCapacity = capacity / 2;
+            if (newCapacity < 8) newCapacity = 8;
+            resize(newCapacity);
+        }
 
-  }
+    }
 
     public int size() {
         return size;
     }
+
     public boolean isEmpty() {
         return size == 0;
     }
@@ -174,18 +180,21 @@ public class ArrayDeque<T> implements Iterable<T>{
         }
         System.out.println();
     }
+
     @Override
-    public String toString(){
+    public String toString() {
         String[] strArr = new String[this.size];
-        for(int i =0;i < this.size;i++){
+        for (int i = 0; i < this.size; i++) {
             strArr[i] = get(i).toString();
         }
-        return "[" + String.join(",",strArr) + "]";
+        return "[" + String.join(",", strArr) + "]";
     }
+
     @Override
-    public Iterator<T> iterator(){
+    public Iterator<T> iterator() {
         return new Iterator<T>() {
             private int curr = 0;
+
             @Override
             public boolean hasNext() {
                 return curr < size;
@@ -193,31 +202,30 @@ public class ArrayDeque<T> implements Iterable<T>{
 
             @Override
             public T next() {
-               if(!hasNext()){
-                   throw new ArrayIndexOutOfBoundsException();
-               }
-               T item = get(curr);
-               curr++;
-               return item;
+                if (!hasNext()) {
+                    throw new ArrayIndexOutOfBoundsException();
+                }
+                T item = get(curr);
+                curr++;
+                return item;
             }
         };
     }
 
     // equals
     @Override
-    public boolean equals(Object o){
-        if(o == null || !(o instanceof ArrayDeque))return false;
-        if(o == this)return true;
-        ArrayDeque<?> other =(ArrayDeque<?>) o;
-        if(other.size != this.size)return false;
-        int i =0;
-        while (i < this.size){
-            if(!other.get(i).equals(this.get(i))){
+    public boolean equals(Object o) {
+        if (o == null || !(o instanceof ArrayDeque)) return false;
+        if (o == this) return true;
+        ArrayDeque<?> other = (ArrayDeque<?>) o;
+        if (other.size != this.size) return false;
+        int i = 0;
+        while (i < this.size) {
+            if (!other.get(i).equals(this.get(i))) {
                 return false;
             }
             i++;
         }
-     return true;
+        return true;
     }
-
 }
