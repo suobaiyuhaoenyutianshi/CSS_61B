@@ -1,24 +1,27 @@
 package gitlet;
 
-/** Driver class for Gitlet, a subset of the Git version-control system.
+/** Gitlet 的驱动程序类，Gitlet 是 Git 版本控制系统的一个子集。
  *  @author TODO
+ */
+
+/** 用法：java gitlet.Main ARGS，其中 ARGS 包含
+ *  <命令> <操作数1> <操作数2> ...
  */
 public class Main {
 
-    /** Usage: java gitlet.Main ARGS, where ARGS contains
-     *  <COMMAND> <OPERAND1> <OPERAND2> ... 
-     */
+
     public static void main(String[] args) {
-        // TODO: what if args is empty?
+        // TODO: 如果 args 为空怎么办
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
-                // TODO: handle the `init` command
+                Repository.setuppresisit();
+                // TODO: 处理 `init` 命令
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
+                // TODO: 处理 `add [文件名]` 命令
                 break;
-            // TODO: FILL THE REST IN
+            // TODO: 填写其余部分
         }
     }
 }
