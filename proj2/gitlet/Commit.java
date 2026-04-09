@@ -47,7 +47,9 @@ public class Commit implements Serializable, Dumpable {
 
     /* TODO: 填写此类的其余部分。 */
 
-
+    public TreeMap<String,String> commitFiles(){
+        return this.files;
+    }
     @Override
     public void dump() {
         System.out.println("Commit:");

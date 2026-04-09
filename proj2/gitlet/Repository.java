@@ -1,7 +1,7 @@
 package gitlet;
 
 import java.io.File;
-import java.util.TreeMap;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -26,7 +26,16 @@ public class Repository {
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** .gitlet 目录。 */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
-
+    //commit内容所在目录/是在object的
+    public static final File COMMIT_path = Utils.join(GITLET_DIR.getPath(),"object","commit");
+    //blob文件内容所在目录/是在object的
+    public static final File BLOB_path = Utils.join(GITLET_DIR.getPath(),"object","blob");
+    //暂存区里的缓冲区路径
+    public static final File SnapSHOTCACHE_path = Utils.join(GITLET_DIR.getPath(),"index","SnapshotCache");
+    //暂存区里的add区路径
+    public static final File ADD_path = Utils.join(GITLET_DIR.getPath(),"index","staging_add");
+    //暂存区里的rm区路径
+    public static final File RM_path = Utils.join(GITLET_DIR.getPath(),"index","staging_rm");
     //初始化仓库
     public static void setuppresisit(){
         if(!GITLET_DIR.exists()){
@@ -65,15 +74,166 @@ public class Repository {
             indexFile.mkdir();
             // 创建两个空文件，并写入初始数据（空的 TreeMap 和 TreeSet）
             TreeMap<String, String> emptyAdd = new TreeMap<>();
-            Utils.writeObject(Utils.join(GITLET_DIR, "staging_add"), emptyAdd);
+            Utils.writeObject(Utils.join(indexFile, "staging_add"), emptyAdd);
 
             TreeMap<String,String> emptyRm = new TreeMap<>();
-            Utils.writeObject(Utils.join(GITLET_DIR, "staging_rm"), emptyRm);
+
+            Utils.writeObject(Utils.join(indexFile, "staging_rm"), emptyRm);
+            TreeMap<String,String> emptySnapshotCache = new TreeMap<>();
+            Utils.writeObject(Utils.join(indexFile,"SnapshotCache"),emptySnapshotCache);
             return;
         }
         //该目录存在，这报错
         System.out.println("A GITlet exist!");
     }
+    //返回当前分支的目录/文件,即.gitlet/refs/heads/。。。。
+    public static File findBranch(){
+        File HEADPath = Utils.join(Repository. GITLET_DIR.getPath(),"HEAD");
+        String strHEAD = Utils.readContentsAsString(HEADPath);//读取是那个个分支
+        File nowHEAD = Utils.join(Repository. GITLET_DIR.getPath(),"refs","heads",strHEAD);//找有头指针分支的commit的哈希的文件，注我虽然这么说，但分支就是是commit,这里也只是为了
+        return nowHEAD;
+    }
+   //返回当前分支的commit文件
+    public static File findBranchCommitFile(){
+        File HEADPath = Utils.join(Repository. GITLET_DIR.getPath(),"HEAD");
+        String strHEAD = Utils.readContentsAsString(HEADPath);//读取是那个个分支
+        File nowHEAD = Utils.join(Repository. GITLET_DIR.getPath(),"refs","heads",strHEAD);//找有头指针分支的commit的哈希的文件，注我虽然这么说，但分支就是是commit,这里也只是为了得到committ的hash
+        //读取文件记录commit的hash
+        String commitHash = Utils.readContentsAsString(nowHEAD);
+        //通过这个在object找commit
+        File HEADcommit = Utils.join(COMMIT_path.getPath(),commitHash);
+        return HEADcommit;
+    }
 
+
+    public static void copyToSnapShotCach(){
+        //寻找当前分支的/////commit///找到committ就是找到TreeMap，TreeMap在commit
+        //返回当前分支的commit文件
+        File HEAdcommitFile = Repository.findBranchCommitFile();
+        //反序列化
+        Commit commitContent = Utils.readObject(HEAdcommitFile,Commit.class);
+        //读取commit的TreeMAp
+        TreeMap<String,String> NowCommittreeFiles= commitContent.commitFiles();
+        //copy给SnapShotCache
+        TreeMap<String,String> copy = new TreeMap<>(NowCommittreeFiles);
+        //序列回个暂存区
+        Utils.writeObject(Repository.SnapSHOTCACHE_path,copy);
+    }
+    public static void add(String addFileName){
+
+        //然后在在该分支即commit里，如果SnapShotCache为空则copy里的TreeMap给SnapShotCach，不为空不copy
+        //该方式给File 分支，它将该分支的TreeMap拷贝给SnapShotCache
+        TreeMap<String,String> SnapShotCacheFile = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+        if(SnapShotCacheFile.isEmpty()){
+            Repository.copyToSnapShotCach();
+        }
+        //add文件路经
+        File addFile = Utils.join(Repository.CWD,addFileName);
+        //SHA-1计算它的hash-1，将文件名，与它的hash-1,存入暂存区add TreeMap中
+        byte [] content = Utils.readContents(addFile);
+        String blobSHA = Utils.sha1(content);
+        //保存 blob 对象
+        Utils.writeContents(Utils.join(BLOB_path,blobSHA),content);
+        ///
+        TreeMap<String,String> addTreeMap = Utils.readObject(Repository.ADD_path,TreeMap.class);
+        if(addTreeMap.isEmpty()){
+
+        }
+
+        ///
+        TreeMap<String,String> addTreeMap = new TreeMap<>();
+        addTreeMap.put(addFileName,blobSHA);
+        TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
+        if(!rmContents.isEmpty()){
+           for(String rmKey:rmContents.keySet()){
+               if(addTreeMap.containsKey(rmKey)){
+                   rmContents.remove(rmKey);
+               }
+           }
+            //序列化覆盖之前的rm区
+            Utils.writeObject(Repository.RM_path,rmContents);
+        }
+        Utils.writeObject(ADD_path,addTreeMap);//先加入add暂存区  在commit时与rm一起再考虑是否加入commit的Treemap中
+
+    }
     /* TODO: 填写此类的其余部分。 */
+    public static void rm(String rmFilename){
+        TreeMap<String,String> SnapShotCacheFile = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+        if(SnapShotCacheFile.isEmpty()){
+            Repository.copyToSnapShotCach();
+        }
+        //rm路径
+        File rmFile = Utils.join(Repository.CWD,rmFilename);
+        byte [] contents = Utils.readContents(rmFile);
+        String blobSHA = Utils.sha1(contents);
+        //加入rm区
+        TreeMap<String,String> rmFileMap = new TreeMap<>();
+        rmFileMap.put(rmFilename,null);
+        //检测add区
+        TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
+        if(!addcontents.isEmpty()){
+            for(String rmKey:rmFileMap.keySet()){
+                if(addcontents.containsKey(rmKey)){
+                    addcontents.remove(rmKey);
+                }
+            }
+            //序列回add区
+            Utils.writeObject(Repository.ADD_path,addcontents);
+        }
+        Utils.writeObject(Repository.RM_path,rmFileMap);
+    }
+
+
+    public static void commitFile(String message){
+        //生成新的commit,父节点1是上次的commit的hsa，
+        TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
+        TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
+        TreeMap<String ,String> snapShotCAche = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+        //当前分支commit的TreeMAp
+        Commit HEADCommit = Utils.readObject(Repository.findBranchCommitFile(),Commit.class);
+        TreeMap<String,String> HEADTreeMap = HEADCommit.commitFiles();
+        if(!addcontents.isEmpty()){
+            snapShotCAche.putAll(addcontents);
+        }
+        if(!rmContents.isEmpty()){
+            for(String rmKey:rmContents.keySet()){
+                snapShotCAche.remove(rmKey);
+            }
+
+        }
+
+        if(HEADTreeMap.equals(snapShotCAche)){
+            System.out.println("No changes added to the commit.");
+            return;
+        }
+
+        //将snapSHot输入回去
+        Utils.writeObject(Repository.SnapSHOTCACHE_path,snapShotCAche);
+        //生成commit给object/commit
+        Commit submit = new Commit(message,HEADCommit.SHA,"",snapShotCAche);
+        Utils.writeObject(Utils.join(Repository.COMMIT_path,submit.SHA),submit);
+        // 更新当前分支指针
+        //HEAD是分支映射，还在这分支，我们也没有新建分支.gitlet/refs/heads/没添加内容，修改.gitlet/refs/heads/master里master内容即可
+       Utils.writeContents(Repository.findBranch(),submit.SHA);
+       //清理暂存区的add区与rm区,snapshotCache 通常不需要清空，因为它应始终反映下一次提交的完整快照（在 commit 后应更新为新 commit 的 files，而不是清空）
+        TreeMap<String, String> empty = new TreeMap<>();
+        Utils.writeObject(Repository.ADD_path,empty);
+        Utils.writeObject(Repository.RM_path,empty);
+        return;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
