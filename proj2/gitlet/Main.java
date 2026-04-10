@@ -46,11 +46,36 @@ public class Main {
                 //提交信息
                 String message = args[1];
                 Repository.commitFile(message);
-
-
+                break;
+            case "checkout"://签出
+                //java gitlet.Main checkout -- [file name] → 从当前 HEAD 恢复文件
+                //java gitlet.Main checkout [commit id] -- [file name] → 从指定 commit 恢复文件
+                if(args.length == 3) {
+                    String symbol1 = args[1];
+                    String symbol2 = args[2];
+                    Repository.checkFile(symbol2);
+                    break;
+                }
+                else if(args.length == 4){
+                    String symbol1 = args[1];//commit  id
+                    String symbol2 = args[3];//指定恢复文件
+                    Repository.checkCommitFilename(symbol1,symbol2);
+                    break;
+                }
+                else{
+                    Repository.checkBranch();
+                }
+                break;
+            case "log":
+                //查看当前分支的日志
 
 
         }
+
+
+
+
+
     }
 }
 

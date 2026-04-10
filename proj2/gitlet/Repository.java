@@ -86,7 +86,7 @@ public class Repository {
         //该目录存在，这报错
         System.out.println("\"A Gitlet version-control system already exists in the current directory.\"");
     }
-    //返回当前分支的目录/文件,即.gitlet/refs/heads/。。。。
+    //返回当前分支指针的目录/文件,即.gitlet/refs/heads/。。。。
     public static File findBranch(){
         File HEADPath = Utils.join(Repository. GITLET_DIR.getPath(),"HEAD");
         String strHEAD = Utils.readContentsAsString(HEADPath);//读取是那个个分支
@@ -222,17 +222,108 @@ public class Repository {
     }
 
 
+    /**1. checkout -- [file name]
+     目的：从当前提交（HEAD）中恢复单个文件到工作目录。
+     影响范围：
+     工作目录：指定的文件被覆盖为 HEAD 中的版本。
+     暂存区：不改变。无论你用的是增量暂存（staging_add / staging_rm）还是完整快照（snapshotCache），这个命令都不会修改它们。
+     当前分支：不变。
+     是否会读取 commit 的 TreeMap 给 snapshot 区？
+     不会。它只读取 HEAD commit 的 files 映射，找到该文件对应的 blob SHA，然后从 blob 对象中取出内容写入工作目录。暂存区的 snapshotCache 保持原样*/
+    public static void checkFile(String fileName){
+        //获得当前分支commit的序列化文件
+        File nowBranch = Repository.findBranchCommitFile();
+        Commit nowBranchCommit = Utils.readObject(nowBranch,Commit.class);
+        TreeMap<String,String> nowCommitFiles = nowBranchCommit.commitFiles();
+        if(!nowCommitFiles.containsKey(fileName)){
+            //该文件在commit的TreeMap中记录为空，
+            System.out.println("This file does not exist in the current branch");
+            return;
+        }
+        String FileSHA = nowCommitFiles.get(fileName);
+        //找到blob文件，并读取到目录上
+
+        Repository.unloadBlob(FileSHA,fileName);
+
+
+    }
+    private static void unloadBlob(String blobName,String filename){
+
+        File blobFile = Utils.join(Repository.BLOB_path,blobName);
+        //String读取
+        String blobContents = Utils.readContentsAsString(blobFile);
+        //覆盖目录下该文件名的内容,write..会自动创建文件
+        Utils.writeContents(Utils.join(Repository.CWD,filename),blobContents);
+    }
+
+/**checkout [branch name]
+ 目的：切换整个分支，将工作目录、暂存区、HEAD 全部切换到目标分支的状态。
+ 影响范围：
+ 工作目录：全部文件被替换为目标分支 HEAD commit 的快照（添加、删除、修改文件）
+ 暂存区：必须清空或更新。根据文档，切换分支后暂存区应被清空（因为暂存区是与分支相关的）。如果你使用 snapshotCache 作为下一次提交的完整快照，那么切换分支后，应该将 snapshotCache 更新为目标分支 HEAD commit 的 files 副本（而不是清空）。但文档明确要求“The staging area is cleared”，所以更合理的做法是清空 staging_add 和 staging_rm，并将 snapshotCache 设置为目标 commit 的 files 副本（以便后续 add 命令基于正确的快照）。
+ 当前分支：HEAD 指向目标分支。是否会读取 commit 的 TreeMap 给 snapshot 区？
+ 会。切换分支后，需要将目标 commit 的 files 映射复制到 snapshotCache（或类似结构）中，以确保下一次 add / commit 基于正确的快照。同时需要清空 staging_add 和 staging_rm。*/
+//写了生成分支在写这个
+        public static void checkBranch(){
+
+        }
 
 
 
+//跟checkFile差不多
+    public static void checkCommitFilename(String commitId,String fileName){
+            //支持缩写
+        commitId = Repository.findFullCommitId(commitId);
+        //为null返回
+        if(commitId == null)return;
+
+            //反序列读取commit——》读取TreeMap
+        File pointCommitFile = Utils.join(Repository.COMMIT_path,commitId);
+        Commit pointCommit = Utils.readObject(pointCommitFile,Commit.class);
+        //读取TreeMap
+        TreeMap<String,String> pointCommitTreeMap = pointCommit.commitFiles();
+        if(!pointCommitTreeMap.containsKey(fileName)){
+            System.out.println("this pointCommit not exist " + fileName);
+            return;
+        }
+        //存在则
+        String pointfileShA = pointCommitTreeMap.get(fileName);
+        //找到blob文件，并读取到目录上
+        Repository.unloadBlob(pointfileShA,fileName);
 
 
+    }
+    //通过几位数找到完整commit id
+    private static String findFullCommitId(String commitId){
+            //项目提供了工具方法
+        //如果目录不存在，plainFilenamesIn 返回 null。
+        //返回的列表是文件名（即 commit 的完整 SHA‑1 字符串），已按字典序排序
+        List<String> commitFiles =Utils.plainFilenamesIn(Repository.COMMIT_path);
+        List<String> findedCommitName = new ArrayList<>();
+        for(String commitName:commitFiles){
+            if(commitName.startsWith(commitId)){
+                findedCommitName.add(commitName);
+            }
+        }
+        if(findedCommitName.size() >1){
+            System.out.println("请多输入几位数");
+            return null;
+        }
+        if (findedCommitName.isEmpty()){
+            System.out.println("该commit不存在");
+            return null;
+        }
+        return findedCommitName.get(0);
 
+    }
+    //查看commit的溯源log
+    public static void commitLog(String commitId){
 
+    }
 
+    //查看当前分支commit的溯源log
+    public static void HEADlog(){
 
-
-
-
+    }
 
 }
