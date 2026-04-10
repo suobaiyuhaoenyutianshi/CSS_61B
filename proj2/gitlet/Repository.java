@@ -5,7 +5,7 @@ import java.util.*;
 
 import static gitlet.Utils.*;
 
-
+//我觉得我的为文件blob存储是比较搞笑的，不是存储blob类型（有blob的序列化），而是文本，其实是因为我忘了，为了方便查看，但其实我可以专门为blob文件存储写个方式，之后可以该，现在是尾巴大，不想该
 // TODO: 在此处导入你需要的任何类
 
 
@@ -60,7 +60,7 @@ public class Repository {
             File master =Utils.join(heads,"master");
             //传入序列化
             TreeMap<String,String> start0 = new TreeMap<>();
-            Commit startFile = new Commit("start0","","",start0);
+            Commit startFile = new Commit("initial commit","","",start0);
             Utils.writeContents(master,startFile.SHA);
             // 保存 commit 对象到 objects/commit/ 下，文件名用它的 SHA
             File commitInit = Utils.join(commit.getPath(),startFile.SHA);
@@ -84,7 +84,7 @@ public class Repository {
             return;
         }
         //该目录存在，这报错
-        System.out.println("A GITlet exist!");
+        System.out.println("\"A Gitlet version-control system already exists in the current directory.\"");
     }
     //返回当前分支的目录/文件,即.gitlet/refs/heads/。。。。
     public static File findBranch(){
@@ -136,12 +136,7 @@ public class Repository {
         Utils.writeContents(Utils.join(BLOB_path,blobSHA),content);
         ///
         TreeMap<String,String> addTreeMap = Utils.readObject(Repository.ADD_path,TreeMap.class);
-        if(addTreeMap.isEmpty()){
 
-        }
-
-        ///
-        TreeMap<String,String> addTreeMap = new TreeMap<>();
         addTreeMap.put(addFileName,blobSHA);
         TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
         if(!rmContents.isEmpty()){
@@ -162,12 +157,17 @@ public class Repository {
         if(SnapShotCacheFile.isEmpty()){
             Repository.copyToSnapShotCach();
         }
-        //rm路径
+        //要rm文件路径
         File rmFile = Utils.join(Repository.CWD,rmFilename);
         byte [] contents = Utils.readContents(rmFile);
-        String blobSHA = Utils.sha1(contents);
+        //物理删除，目录上面的文件
+        if(rmFile.exists()){
+            Utils.restrictedDelete(rmFile);
+        }
         //加入rm区
-        TreeMap<String,String> rmFileMap = new TreeMap<>();
+        TreeMap<String,String> rmFileMap = Utils.readObject(Repository.RM_path,TreeMap.class);
+        //删除目录上的文件
+
         rmFileMap.put(rmFilename,null);
         //检测add区
         TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
@@ -219,7 +219,6 @@ public class Repository {
         TreeMap<String, String> empty = new TreeMap<>();
         Utils.writeObject(Repository.ADD_path,empty);
         Utils.writeObject(Repository.RM_path,empty);
-        return;
     }
 
 
