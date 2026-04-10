@@ -1,7 +1,9 @@
 package gitlet;
 
 import java.io.File;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.*;
+import java.util.concurrent.Callable;
 
 import static gitlet.Utils.*;
 
@@ -139,6 +141,13 @@ public class Repository {
 
         addTreeMap.put(addFileName,blobSHA);
         TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
+        //
+        if(rmContents.get(addFileName) != null){
+            rmContents.remove(addFileName);
+        }
+
+
+        //
         if(!rmContents.isEmpty()){
            for(String rmKey:rmContents.keySet()){
                if(addTreeMap.containsKey(rmKey)){
@@ -316,13 +325,41 @@ public class Repository {
         return findedCommitName.get(0);
 
     }
-    //查看commit的溯源log
-    public static void commitLog(String commitId){
 
+    //打印commit的溯源log
+    private static void printLog(Commit commitcontent){
+            System.out.println("===");
+            System.out.println("commit : "+ commitcontent.calSHa());
+            if(!commitcontent.calParent2().equals("")){
+                System.out.println("Merge : "+ commitcontent.calParent1() + commitcontent.calParent2());
+            }
+            System.out.println(commitcontent.calData());
+            System.out.println(commitcontent.calMessege());
+            System.out.println();
+            System.out.println();
+            if(!commitcontent.calParent1().equals("")){
+                Commit nextCommit = Utils.readObject(Utils.join(Repository.COMMIT_path,commitcontent.calParent1()),Commit.class);
+                Repository.printLog(nextCommit);
+            }
+    }
+
+
+
+    //查看commit的溯源log,主要方便自己,查看从一个commit的溯源记录
+    public static void commitLog(String commitId){
+            //这个是为了我以后专门查用的
+        commitId = Repository.findFullCommitId(commitId);
+        File commitFile = Utils.join(Repository.COMMIT_path,commitId);
+        Commit  originalCommit = Utils.readObject(commitFile,Commit.class);
+        Repository.printLog(originalCommit);
     }
 
     //查看当前分支commit的溯源log
     public static void HEADlog(){
+        //HEADd的commit的id
+       File  commitIdFile = Repository.findBranch();
+       String commitId = Utils.readContentsAsString(commitIdFile);
+       Repository.commitLog(commitId);
 
     }
 

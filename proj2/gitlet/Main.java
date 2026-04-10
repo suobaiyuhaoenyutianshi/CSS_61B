@@ -68,7 +68,8 @@ public class Main {
                 break;
             case "log":
                 //查看当前分支的日志
-
+                Repository.HEADlog();
+                break;
 
         }
 
