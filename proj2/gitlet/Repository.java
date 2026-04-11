@@ -417,20 +417,59 @@ public class Repository {
     //不存在，且不在rm区即deleted
     // 存在，SHA值对比——》modified
 
-    private static void ModificationNotStagedForCommit(TreeMap<String,String> addStage,TreeMap<String,String> rmStage){
-            TreeMap<String,String> informationRecord = new TreeMap<>();
-            //遍历snapShotCache的entry
-        TreeMap<String,String> snapShotCache = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
-        for(Map.Entry<String,String> entry:snapShotCache.entrySet()){
-            File file = Utils.join(Repository.CWD,entry.getKey());
-            if(!file.exists() && !rmStage.containsKey(entry.getKey())){
-                informationRecord.put(entry.getKey(),"deleted");
-            }
-            else {
 
+    private static void printInformationREcored(TreeMap<String,String> informations){
+            for (Map.Entry<String,String> informtion:informations.entrySet()){
+                System.out.println(informtion.getKey() + informtion.getValue());
+            }
+        System.out.println();System.out.println();
+    }
+
+
+    /**
+     * 对哦，rm要么使文件脱离跟踪，要脱离跟踪与被删，压根不用考虑rm
+     * rmStage（即暂存删除区）中的文件，不需要在“修改但未暂存”中考虑。因为用户已经明确要删除这些文件，无论工作目录中是否存在同名文件，都不应再报告为“修改未暂存”
+     * 。如果工作目录中又重新创建了该文件，那它属于“未跟踪文件”的范畴（额外学分），而不是“修改未暂存”。*/
+    private static void ModificationNotStagedForCommit(TreeMap<String,String> addStage,TreeMap<String,String> rmStage){
+        TreeMap<String,String> informations = new TreeMap<>();
+        //暂存区add,即动过 且没脱离跟踪
+       for(Map.Entry<String,String> addEntry:addStage.entrySet()){
+           File addFile = Utils.join(Repository.CWD,addEntry.getKey());
+           //文件不在
+           if(!addFile.exists() && rmStage.containsKey(addEntry.getKey())){
+               informations.put(addEntry.getKey(),"deleted");
+           }
+           //文件在
+           else  {
+               byte[]  contence = Utils.readContents(addFile);
+               String fileSHA = Utils.sha1(contence);
+               if(!addEntry.getValue().equals(fileSHA)){
+                   informations.put(addEntry.getKey(),"modify");
+               }
+           }
+
+       }
+        //被跟踪，理应未被修改的
+        TreeMap<String,String> snapShotCache = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+       //除去跟add踪修改的与被除去跟踪rm
+        snapShotCache.remove(addStage);
+        snapShotCache.remove(rmStage);
+        for(Map.Entry<String,String> entry:snapShotCache.entrySet()){
+            //如果工作目录不存在 → 记录 "deleted"
+            //如果工作目录存在且 SHA 与 snapShotCache 中不同 → 记录 "modified"
+            File file = Utils.join(Repository.CWD,entry.getKey());
+            if(!file.exists()) informations.put(entry.getKey(),"deleted");
+            else {
+                byte [] contentence = Utils.readContents(file);
+                String fileHSA = Utils.sha1(contentence);
+                if(!entry.getValue().equals(fileHSA)){
+                    informations.put(entry.getKey(),"modify");
+                }
             }
         }
-
+        //打印informationrecord
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        printInformationREcored(informations);
     }
 
 
