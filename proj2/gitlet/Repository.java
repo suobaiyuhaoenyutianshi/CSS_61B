@@ -1,5 +1,7 @@
 package gitlet;
 
+import com.sun.source.tree.Tree;
+
 import java.io.File;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.*;
@@ -420,7 +422,7 @@ public class Repository {
 
     private static void printInformationREcored(TreeMap<String,String> informations){
             for (Map.Entry<String,String> informtion:informations.entrySet()){
-                System.out.println(informtion.getKey() + informtion.getValue());
+                System.out.println(informtion.getKey() +" " +  informtion.getValue());
             }
         System.out.println();System.out.println();
     }
@@ -451,9 +453,13 @@ public class Repository {
        }
         //被跟踪，理应未被修改的
         TreeMap<String,String> snapShotCache = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
-       //除去跟add踪修改的与被除去跟踪rm
-        snapShotCache.remove(addStage);
-        snapShotCache.remove(rmStage);
+       //除去跟add踪修改的与被除去跟踪rm//修改
+       for(String key:addStage.keySet()){
+           snapShotCache.remove(key);
+       }
+       for(String key:rmStage.keySet()){
+           snapShotCache.remove(key);
+       }
         for(Map.Entry<String,String> entry:snapShotCache.entrySet()){
             //如果工作目录不存在 → 记录 "deleted"
             //如果工作目录存在且 SHA 与 snapShotCache 中不同 → 记录 "modified"
@@ -472,7 +478,31 @@ public class Repository {
         printInformationREcored(informations);
     }
 
+    private static void printUntracked(List<String> files){
+        for(String fileName:files){
+            System.out.println(fileName);
+        }
+        System.out.println();System.out.println();
+    }
+//未被跟踪
+    private static void unTracked(TreeMap<String,String> addStage, TreeMap<String,String> rmStage){
+       List<String> filenames = new ArrayList<>(Utils.plainFilenamesIn(Repository.CWD));// Utils.plainFilenamesIn(Repository.CWD) 只会返回普通文件，而 .gitlet 是一个目录，所以它不会出现在返回的列表中。
+        for(String addFile:addStage.keySet()){
+            filenames.remove(addFile);
+        }
+        for(String filename:rmStage.keySet()){
+            filenames.remove(filename);
+        }
 
+        // 移除当前 commit 中跟踪的文件（snapshotCache）
+        TreeMap<String, String> snapShotCache = Utils.readObject(Repository.SnapSHOTCACHE_path, TreeMap.class);
+        for (String trackedFile : snapShotCache.keySet()) {
+            filenames.remove(trackedFile);
+        }
+        //打印
+        System.out.println("=== Untracked Files ===");
+        printUntracked(filenames);
+    }
     //查看当前状态,在我设计里在snapShot区与add区即被跟踪
     public static void status(){
          //先把必要的TreeMap列出来与不要创建该文件夹的目录/blob的TreeMap很多要用，而是查的时候在计算与查询
@@ -486,6 +516,9 @@ public class Repository {
         Repository.viewedRmStage(rmStage);
         //修改但未暂存的文件,这个跟踪
         Repository.ModificationNotStagedForCommit(addStage,rmStage);
+        //未被跟踪的文件，既不在add区也不在snapSHotCAche区，rm(使用rm要么使文件脱离跟踪，如果在rm区脱离跟踪与被删，压根不用考虑rm),只用查键
+        Repository.unTracked(addStage,rmStage);
+
 
     }
 
