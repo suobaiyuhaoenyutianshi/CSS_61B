@@ -70,7 +70,9 @@ public class Main {
                 //查看当前分支的日志
                 Repository.HEADlog();
                 break;
-
+            case "status":
+                Repository.status();
+                break;
         }
 
 

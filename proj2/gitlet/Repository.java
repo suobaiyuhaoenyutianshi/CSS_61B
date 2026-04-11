@@ -62,7 +62,7 @@ public class Repository {
             File master =Utils.join(heads,"master");
             //传入序列化
             TreeMap<String,String> start0 = new TreeMap<>();
-            Commit startFile = new Commit("initial commit","","",start0);
+            Commit startFile = new Commit("initial commit","","",start0,"");
             Utils.writeContents(master,startFile.SHA);
             // 保存 commit 对象到 objects/commit/ 下，文件名用它的 SHA
             File commitInit = Utils.join(commit.getPath(),startFile.SHA);
@@ -134,6 +134,9 @@ public class Repository {
         //SHA-1计算它的hash-1，将文件名，与它的hash-1,存入暂存区add TreeMap中
         byte [] content = Utils.readContents(addFile);
         String blobSHA = Utils.sha1(content);
+        //检测snapShotCache区有没有它，有就不加blob，也不用加入add区
+        String cachedSHA = SnapShotCacheFile.get(addFileName);
+        if( cachedSHA != null&& cachedSHA.equals(blobSHA)) return;
         //保存 blob 对象
         Utils.writeContents(Utils.join(BLOB_path,blobSHA),content);
         ///
@@ -141,26 +144,33 @@ public class Repository {
 
         addTreeMap.put(addFileName,blobSHA);
         TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
-        //
-        if(rmContents.get(addFileName) != null){
-            rmContents.remove(addFileName);
-        }
 
-
-        //
         if(!rmContents.isEmpty()){
-           for(String rmKey:rmContents.keySet()){
-               if(addTreeMap.containsKey(rmKey)){
-                   rmContents.remove(rmKey);
-               }
-           }
+            if(rmContents.get(addFileName) != null){
+                rmContents.remove(addFileName);
+            }
             //序列化覆盖之前的rm区
             Utils.writeObject(Repository.RM_path,rmContents);
         }
+
+
         Utils.writeObject(ADD_path,addTreeMap);//先加入add暂存区  在commit时与rm一起再考虑是否加入commit的Treemap中
 
     }
-    /* TODO: 填写此类的其余部分。 */
+    /* TODO: 填写此类的其余部分。如果文件在 staging_add 中：
+只从 staging_add 中移除该文件，不加入 staging_rm，不删除工作目录文件。
+（因为用户之前 add 了但未提交，现在取消暂存，文件应该保留在工作目录中。）
+
+否则，如果文件在 snapshotCache 中（注意：snapshotCache 代表下一次提交的完整快照，它初始来自当前 commit，然后被 add 更新过吗？你的 add 没有更新 snapshotCache，所以 snapshotCache 始终是当前 commit 的快照，除非 commit 后更新。实际上，在你的流程中，snapshotCache 在 commit 后会被更新为新提交的 files。因此，snapshotCache 在未提交期间反映的是上一次提交的快照，而不是累积了 add 和 rm 后的快照。这有点混乱，但我们可以这样理解：snapshotCache 是“当前 commit 的文件快照”，而 staging_add 和 staging_rm 是增量。所以判断文件是否被“跟踪”应该看 snapshotCache（因为它是当前 commit 的快照）。）
+
+因此，如果文件不在 staging_add 中，但存在于 snapshotCache 中（即被当前 commit 跟踪），那么：
+
+将该文件加入 staging_rm（标记删除）。
+
+删除工作目录中的该文件（如果存在）。
+
+否则（既不在 staging_add，也不在 snapshotCache 中）：
+报错 "No reason to remove the file." */
     public static void rm(String rmFilename){
         TreeMap<String,String> SnapShotCacheFile = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
         if(SnapShotCacheFile.isEmpty()){
@@ -169,43 +179,48 @@ public class Repository {
         //要rm文件路径
         File rmFile = Utils.join(Repository.CWD,rmFilename);
         byte [] contents = Utils.readContents(rmFile);
-        //物理删除，目录上面的文件
-        if(rmFile.exists()){
-            Utils.restrictedDelete(rmFile);
-        }
-        //加入rm区
-        TreeMap<String,String> rmFileMap = Utils.readObject(Repository.RM_path,TreeMap.class);
-        //删除目录上的文件
 
-        rmFileMap.put(rmFilename,null);
-        //检测add区
         TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
+
         if(!addcontents.isEmpty()){
-            for(String rmKey:rmFileMap.keySet()){
-                if(addcontents.containsKey(rmKey)){
-                    addcontents.remove(rmKey);
+                if(addcontents.containsKey(rmFilename)){
+                    addcontents.remove(rmFilename);
                 }
-            }
             //序列回add区
             Utils.writeObject(Repository.ADD_path,addcontents);
+                return;
         }
-        Utils.writeObject(Repository.RM_path,rmFileMap);
-    }
+
+        if(SnapShotCacheFile.containsKey(rmFilename)){
+            if(rmFile.exists()){
+                Utils.restrictedDelete(rmFile);
+            }
+        }
+        else {
+                System.out.println("No reason to remove the file.");
+                return;
+            }
+
+                //加入rm区
+                TreeMap<String,String> rmFileMap = Utils.readObject(Repository.RM_path,TreeMap.class);
+                rmFileMap.put(rmFilename,null);
+                Utils.writeObject(Repository.RM_path,rmFileMap);
+            }
 
 
-    public static void commitFile(String message){
-        //生成新的commit,父节点1是上次的commit的hsa，
-        TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
-        TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
-        TreeMap<String ,String> snapShotCAche = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
-        //当前分支commit的TreeMAp
-        Commit HEADCommit = Utils.readObject(Repository.findBranchCommitFile(),Commit.class);
-        TreeMap<String,String> HEADTreeMap = HEADCommit.commitFiles();
-        if(!addcontents.isEmpty()){
-            snapShotCAche.putAll(addcontents);
-        }
-        if(!rmContents.isEmpty()){
-            for(String rmKey:rmContents.keySet()){
+            public static void commitFile(String message){
+                //生成新的commit,父节点1是上次的commit的hsa，
+                TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
+                TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
+                TreeMap<String ,String> snapShotCAche = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+                //当前分支commit的TreeMAp
+                Commit HEADCommit = Utils.readObject(Repository.findBranchCommitFile(),Commit.class);
+                TreeMap<String,String> HEADTreeMap = HEADCommit.commitFiles();
+                if(!addcontents.isEmpty()){
+                    snapShotCAche.putAll(addcontents);
+                }
+                if(!rmContents.isEmpty()){
+                    for(String rmKey:rmContents.keySet()){
                 snapShotCAche.remove(rmKey);
             }
 
@@ -246,7 +261,7 @@ public class Repository {
         TreeMap<String,String> nowCommitFiles = nowBranchCommit.commitFiles();
         if(!nowCommitFiles.containsKey(fileName)){
             //该文件在commit的TreeMap中记录为空，
-            System.out.println("This file does not exist in the current branch");
+            System.out.println("File does not exist in that commit.");
             return;
         }
         String FileSHA = nowCommitFiles.get(fileName);
@@ -329,9 +344,9 @@ public class Repository {
     //打印commit的溯源log
     private static void printLog(Commit commitcontent){
             System.out.println("===");
-            System.out.println("commit : "+ commitcontent.calSHa());
+            System.out.println("commit "+ commitcontent.getShortSHA());
             if(!commitcontent.calParent2().equals("")){
-                System.out.println("Merge : "+ commitcontent.calParent1() + commitcontent.calParent2());
+                System.out.println("Merge : "+ commitcontent.calParent1().substring(0, 7) + commitcontent.calParent2().substring(0, 7));
             }
             System.out.println(commitcontent.calData());
             System.out.println(commitcontent.calMessege());
@@ -360,6 +375,78 @@ public class Repository {
        File  commitIdFile = Repository.findBranch();
        String commitId = Utils.readContentsAsString(commitIdFile);
        Repository.commitLog(commitId);
+
+    }
+
+    private static void printBranch(List<String> branchsName){
+            System.out.println("=== Branches ===");
+            System.out.print("*");
+            for(String branchName:branchsName){
+                System.out.println(branchName);
+            }
+    }
+
+    //查看分支
+    private static void viewedBranch(){
+            List<String> branchsName = new ArrayList<>(Utils.plainFilenamesIn(Utils.join(Repository.GITLET_DIR,"refs","heads")));
+            File HEADPath = Utils.join(Repository. GITLET_DIR.getPath(),"HEAD");
+            String strHEAD = Utils.readContentsAsString(HEADPath);//读取是那个个分支
+            branchsName.remove(strHEAD);
+            branchsName.add(0,strHEAD);
+            //打印分支
+            printBranch(branchsName);
+            System.out.println();System.out.println();
+    }
+
+    private static void vieweaddStage(TreeMap<String,String> addStage){
+           System.out.println("=== Staged Files ===");
+           for(String addName:addStage.keySet()){
+               System.out.println(addName);
+           }
+        System.out.println();System.out.println();
+    }
+
+    private static void viewedRmStage(TreeMap<String ,String> rmStage){
+            System.out.println("=== Removed Files ===");
+            for(String rmStageName:rmStage.keySet()){
+                System.out.println(rmStageName);
+            }
+            System.out.println();System.out.println();
+    }
+    //寻找该目录下的文件
+    //不存在，且不在rm区即deleted
+    // 存在，SHA值对比——》modified
+
+    private static void ModificationNotStagedForCommit(TreeMap<String,String> addStage,TreeMap<String,String> rmStage){
+            TreeMap<String,String> informationRecord = new TreeMap<>();
+            //遍历snapShotCache的entry
+        TreeMap<String,String> snapShotCache = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+        for(Map.Entry<String,String> entry:snapShotCache.entrySet()){
+            File file = Utils.join(Repository.CWD,entry.getKey());
+            if(!file.exists() && !rmStage.containsKey(entry.getKey())){
+                informationRecord.put(entry.getKey(),"deleted");
+            }
+            else {
+
+            }
+        }
+
+    }
+
+
+    //查看当前状态,在我设计里在snapShot区与add区即被跟踪
+    public static void status(){
+         //先把必要的TreeMap列出来与不要创建该文件夹的目录/blob的TreeMap很多要用，而是查的时候在计算与查询
+        TreeMap<String,String> addStage = Utils.readObject(Repository.ADD_path,TreeMap.class);
+        TreeMap<String,String> rmStage = Utils.readObject(Repository.RM_path,TreeMap.class);
+        //查看分支
+        Repository.viewedBranch();
+        //已暂存的文件（add 过但未提交）
+        Repository.vieweaddStage(addStage);
+        //已标记删除的文件（rm 过但未提交）
+        Repository.viewedRmStage(rmStage);
+        //修改但未暂存的文件,这个跟踪
+        Repository.ModificationNotStagedForCommit(addStage,rmStage);
 
     }
 
