@@ -6,7 +6,7 @@ import java.io.File;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.*;
 import java.util.concurrent.Callable;
-
+import java.io.File;
 import static gitlet.Utils.*;
 
 //我觉得我的为文件blob存储是比较搞笑的，不是存储blob类型（有blob的序列化），而是文本，其实是因为我忘了，为了方便查看，但其实我可以专门为blob文件存储写个方式，之后可以该，现在是尾巴大，不想该
@@ -291,7 +291,7 @@ public class Repository {
  会。切换分支后，需要将目标 commit 的 files 映射复制到 snapshotCache（或类似结构）中，以确保下一次 add / commit 基于正确的快照。同时需要清空 staging_add 和 staging_rm。*/
 //写了生成分支在写这个
         public static void checkBranch(){
-
+                if()
         }
 
 
@@ -484,9 +484,9 @@ public class Repository {
         }
         System.out.println();System.out.println();
     }
-//未被跟踪
-    private static void unTracked(TreeMap<String,String> addStage, TreeMap<String,String> rmStage){
-       List<String> filenames = new ArrayList<>(Utils.plainFilenamesIn(Repository.CWD));// Utils.plainFilenamesIn(Repository.CWD) 只会返回普通文件，而 .gitlet 是一个目录，所以它不会出现在返回的列表中。
+ //返回未跟踪的对象List
+    private static List<String> UntrackItems(TreeMap<String,String> addStage, TreeMap<String,String> rmStage){
+        List<String> filenames = new ArrayList<>(Utils.plainFilenamesIn(Repository.CWD));// Utils.plainFilenamesIn(Repository.CWD) 只会返回普通文件，而 .gitlet 是一个目录，所以它不会出现在返回的列表中。
         for(String addFile:addStage.keySet()){
             filenames.remove(addFile);
         }
@@ -499,6 +499,12 @@ public class Repository {
         for (String trackedFile : snapShotCache.keySet()) {
             filenames.remove(trackedFile);
         }
+        return filenames;
+    }
+
+//未被跟踪
+    private static void unTracked(TreeMap<String,String> addStage, TreeMap<String,String> rmStage){
+       List<String> filenames = UntrackItems(addStage,rmStage);
         //打印
         System.out.println("=== Untracked Files ===");
         printUntracked(filenames);
@@ -521,5 +527,39 @@ public class Repository {
 
 
     }
+
+    public static void BranchName(String newbranch){
+        List<String> points = Utils.plainFilenamesIn(Utils.join(Repository.GITLET_DIR,"refs","heads"));
+        if(points.contains(newbranch)){
+            System.out.println("A branch with that name already exists.");
+            return;
+        }
+        File HEADPoint = Repository.findBranch();
+        String HEADCommitIdHAS = Utils.readContentsAsString(HEADPoint);
+        File newBuildBranch = Utils.join(Repository.GITLET_DIR,"refs","heads",newbranch);
+        Utils.writeContents(newBuildBranch,HEADCommitIdHAS);
+
+    }
+
+    public static void rmBranch(String branchName){
+        List<String> branchpointS = Utils.plainFilenamesIn(Utils.join(Repository.GITLET_DIR,"refs","heads"));
+        if(!branchpointS.contains(branchName)){
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        File HEADfile = Utils.join(Repository.GITLET_DIR,"HEAD");
+        String HEADName = Utils.readContentsAsString(HEADfile);
+        if(HEADName.equals(branchName)){
+            System.out.println("Cannot remove the current branch.");
+            return;
+        }
+
+        File branchFile = Utils.join(Repository.GITLET_DIR,"refs","heads",branchName);
+        branchFile.delete();
+    }
+
+
+
+
 
 }
