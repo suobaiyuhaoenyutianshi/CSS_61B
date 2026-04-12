@@ -63,7 +63,8 @@ public class Main {
                     break;
                 }
                 else{
-                    Repository.checkBranch();
+                    String switchBranchName = args[1];
+                    Repository.checkBranch(switchBranchName);
                 }
                 break;
             case "log":
@@ -73,6 +74,21 @@ public class Main {
             case "status":
                 Repository.status();
                 break;
+
+
+            //创建新分支但不切换
+            case "branch":
+                String symbol = args[1];
+                Repository.BranchName(symbol);
+                break;
+
+            //删除一个分支指针
+            case "rm-branch":
+                String branchname = args[1];
+                Repository.rmBranch(branchname);
+                break;
+            case "global-log":
+                Repository.viewedGlobalLog();
         }
 
 

@@ -290,8 +290,31 @@ public class Repository {
  当前分支：HEAD 指向目标分支。是否会读取 commit 的 TreeMap 给 snapshot 区？
  会。切换分支后，需要将目标 commit 的 files 映射复制到 snapshotCache（或类似结构）中，以确保下一次 add / commit 基于正确的快照。同时需要清空 staging_add 和 staging_rm。*/
 //写了生成分支在写这个
-        public static void checkBranch(){
-                if()
+        public static void checkBranch(String branchName){
+            List<String> points = Utils.plainFilenamesIn(Utils.join(Repository.GITLET_DIR,"refs","heads"));
+            if(!points.contains(branchName)){
+                System.out.println("the branch does not exist.");
+                return;
+            }
+            TreeMap<String ,String> addStage = Utils.readObject(Repository.ADD_path,TreeMap.class);
+            TreeMap<String,String> rmStage = Utils.readObject(Repository.RM_path,TreeMap.class);
+                if(addStage != null && !addStage.isEmpty() || rmStage != null && !rmStage.isEmpty()){
+                    System.out.println("the content in the stage has not committed.");
+                    return;
+                }
+                TreeMap<String,String> files = Repository.ModificationItems(addStage,rmStage);
+                if(files != null && !files.isEmpty()){
+                    System.out.println("\"There is an untracked file in the way; delete it, or add and commit it first.\"");
+                    return;
+
+                }
+                File pointHEAD = Utils.join(Repository.GITLET_DIR,"HEAD");
+                Utils.writeContents(pointHEAD,branchName);
+                File HEADCommitfile = findBranchCommitFile();
+                //更新snapShot区
+                Commit HEADSnapShotCommit = Utils.readObject(HEADCommitfile,Commit.class);
+                TreeMap<String,String> HEADSnapShot = HEADSnapShotCommit.commitFiles();
+                Utils.writeObject(Repository.SnapSHOTCACHE_path,HEADSnapShot);
         }
 
 
@@ -491,18 +514,26 @@ public class Repository {
  //返回未跟踪的对象List
     private static List<String> UntrackItems(TreeMap<String,String> addStage, TreeMap<String,String> rmStage){
         List<String> filenames = new ArrayList<>(Utils.plainFilenamesIn(Repository.CWD));// Utils.plainFilenamesIn(Repository.CWD) 只会返回普通文件，而 .gitlet 是一个目录，所以它不会出现在返回的列表中。
+        List<String> staticFileName = Utils.plainFilenamesIn(Repository.CWD);
         for(String addFile:addStage.keySet()){
             filenames.remove(addFile);
         }
-        for(String filename:rmStage.keySet()){
-            filenames.remove(filename);
-        }
+
+
 
         // 移除当前 commit 中跟踪的文件（snapshotCache）
         TreeMap<String, String> snapShotCache = Utils.readObject(Repository.SnapSHOTCACHE_path, TreeMap.class);
         for (String trackedFile : snapShotCache.keySet()) {
             filenames.remove(trackedFile);
         }
+        //一个文件在rm区，说明脱离跟踪且被删除，那么此时我在新建同名的文件，那理应是未跟踪
+        for(String rmfile:rmStage.keySet()){
+            if(staticFileName.contains(rmfile)){
+                filenames.add(rmfile);
+            }
+        }
+
+
         return filenames;
     }
 
@@ -561,6 +592,50 @@ public class Repository {
         File branchFile = Utils.join(Repository.GITLET_DIR,"refs","heads",branchName);
         branchFile.delete();
     }
+
+    private static void viewedGlobalLog(){
+        File globCommitFile = Repository.COMMIT_path;
+        List<String> globCommitions = Utils.plainFilenamesIn(globCommitFile);
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
