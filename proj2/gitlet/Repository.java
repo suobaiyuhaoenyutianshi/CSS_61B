@@ -369,7 +369,7 @@ public class Repository {
     //打印commit的溯源log
     private static void printLog(Commit commitcontent){
             System.out.println("===");
-            System.out.println("commit "+ commitcontent.getShortSHA());
+            System.out.println("commit "+ commitcontent.SHA);
             if(!commitcontent.calParent2().equals("")){
                 System.out.println("Merge : "+ commitcontent.calParent1().substring(0, 7) + commitcontent.calParent2().substring(0, 7));
             }
@@ -593,9 +593,21 @@ public class Repository {
         branchFile.delete();
     }
 
-    private static void viewedGlobalLog(){
+    public static void viewedGlobalLog(){
         File globCommitFile = Repository.COMMIT_path;
         List<String> globCommitions = Utils.plainFilenamesIn(globCommitFile);
+        for (String CommitId:globCommitions){
+            Commit commitcontent = Utils.readObject(Utils.join(Repository.COMMIT_path,CommitId),Commit.class);
+            System.out.println("===");
+            System.out.println("commit "+ commitcontent.SHA);
+            if(!commitcontent.calParent2().equals("")){
+                System.out.println("Merge : "+ commitcontent.calParent1().substring(0, 7) + commitcontent.calParent2().substring(0, 7));
+            }
+            System.out.println(commitcontent.calData());
+            System.out.println(commitcontent.calMessege());
+            System.out.println();
+            System.out.println();
+        }
 
     }
 
