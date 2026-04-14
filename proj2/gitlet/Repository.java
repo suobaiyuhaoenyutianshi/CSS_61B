@@ -677,12 +677,13 @@ public class Repository {
         String spilitCommitId =spilit.SHA;
         if(spilitCommitId.equals(currCommitId) && !givenCommitId.equals(spilitCommitId)){
             System.out.println("Current branch fast-forwarded.");
-            Utils.writeObject(Repository.SnapSHOTCACHE_path,mergeCommit);
+            Utils.writeObject(Repository.SnapSHOTCACHE_path,mergeCommit.commitFiles());
+            //生成merge的文件
+            TreeMap<String,String> givenFiles = m
             return true;
         }
         if (spilitCommitId.equals(givenCommitId) && !spilitCommitId.equals(currCommitId)) {
             System.out.println("Given branch is an ancestor of the current branch.");
-            Utils.writeObject(Repository.SnapSHOTCACHE_path,nowCommit);
             return true;
         }
         if(spilitCommitId.equals(currCommitId) && spilitCommitId.equals(givenCommitId)){
@@ -693,8 +694,8 @@ public class Repository {
     }
     //处理curr!=given!=split
         private static String conflicFile(String currBolbFileId,String givenBlobFileId,String Filename){
-            String currBlobContent = (currBolbFileId == null)?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,currBolbFileId));
-            String givebBlobContent = (givenBlobFileId == null)?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,givenBlobFileId));
+            String currBlobContent = (currBolbFileId.equals(""))?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,currBolbFileId));
+            String givebBlobContent = (givenBlobFileId.equals(""))?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,givenBlobFileId));
             String updateContent = "<<<<<<< HEAD\n" + currBlobContent + "\n=======\n" + givebBlobContent + "\n>>>>>>>\n";
             Utils.writeContents(Utils.join(Repository.CWD,Filename),updateContent);
             //加到暂存区add,与生成blob值
@@ -727,6 +728,8 @@ public class Repository {
         TreeMap<String,String> newSnaoShot = new TreeMap<>();
         TreeMap<String,String> newAddStage = new TreeMap<>();
         TreeMap<String,String> newRmStage = new TreeMap<>();
+        //被删文件，每个for循环后清空
+        List<String> ProcessedDocuments = new ArrayList<>();
         /**String cuurntFileContent;
         String givenFileContent;
         String splitFileContent;*/
@@ -741,7 +744,7 @@ public class Repository {
              String givenFileContent = (givenFiles.get(splitfileName) == null)?"":givenFiles.get(splitfileName);
              if(currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
                  newSnaoShot.put(splitfileName,splitFileContent);
-                 currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
+                 ProcessedDocuments.add(splitfileName);
                  continue;
              }
              if(currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent)){
@@ -750,11 +753,11 @@ public class Repository {
                  //不要返回删除这文件，最后所有文件处理后由newsnaap处理加载
                  if(fileStage){
                      newAddStage.put(splitfileName,givenFileContent);
-                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
+                     ProcessedDocuments.add(splitfileName);
                      continue;
                  }else{
                      newRmStage.put(splitfileName,givenFileContent);
-                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
+                     ProcessedDocuments.add(splitfileName);
                      continue;
                  }
              }
@@ -763,10 +766,10 @@ public class Repository {
                  boolean fileSnap = Repository.ProcessCurrUnequalSplitEqualGiven(currentFileContent,givenFileContent,splitFileContent);
                  if(fileSnap){
                      newSnaoShot.put(splitfileName,currentFileContent);
-                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
+                     ProcessedDocuments.add(splitfileName);
                      continue;
                  }else{//这只能说明文件是不在的，无法加到暂存区
-                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
+                     ProcessedDocuments.add(splitfileName);
                      continue;
                  }
 
@@ -775,11 +778,11 @@ public class Repository {
                  boolean fileSnap = Repository.ProcessCurrEqualGivenUnequalSplit(currentFileContent,givenFileContent,splitFileContent);
                  if(fileSnap){
                      newSnaoShot.put(splitfileName,currentFileContent);
-                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
+                     ProcessedDocuments.add(splitfileName);
                      continue;
 
                  }else {
-                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
+                     ProcessedDocuments.add(splitfileName);
                      continue;
                  }
              }
@@ -788,13 +791,55 @@ public class Repository {
                 String newaddStageBlob = Repository.conflicFile(currentFileContent,givenFileContent,splitfileName);
                 //加到暂存add区
                 newAddStage.put(splitfileName,newaddStageBlob);
-                currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
-                continue;
+                ProcessedDocuments.add(splitfileName);
+
             }
 
          }
+//每次一个循环结束去除ProcessedDocuments的文件并清空
+        for(String file:ProcessedDocuments){
+            currFiles.remove(file);givenFiles.remove(file);splitFiles.remove(file);
+        }
+        ProcessedDocuments = new ArrayList<>();
+        for(Map.Entry<String,String> currFile:currFiles.entrySet()){
+            //且curr一定存在，否则怎么遍历
+            //只有curr==given!=split或curr != given != split的情况
+            String currentFileName = currFile.getKey();
+            String currFileContent = currFile.getValue();
+            String splitFileContent = null;
+            String givenFileContent = (givenFiles.get(currentFileName) == null)?"":givenFiles.get(currentFileName);
+            if(currFileContent.equals(givenFileContent)){
+               //curr一定存在
+                newSnaoShot.put(currentFileName,currFileContent);
+                ProcessedDocuments.add(currentFileName);
 
+            }
+            else {
+                //given是null，而split也是null,直接加入newSnap
+                if(givenFileContent == null){
+                    newSnaoShot.put(currentFileName,currFileContent);
 
+                }//不相同还存在，冲突
+               else {
+                   String fileSHA = Repository.conflicFile(currFileContent,givenFileContent,currentFileName);
+                   newAddStage.put(currentFileName,fileSHA);
+                   ProcessedDocuments.add(currentFileName);
+
+                }
+
+            }
+        }
+        for(String file:ProcessedDocuments){
+            currFiles.remove(file);givenFiles.remove(file);//Split不用去了
+        }
+        ProcessedDocuments = new ArrayList<>();
+        //given只剩下了curr == split != given
+        //yinc直接加到暂存区，存在则add区，
+        for(Map.Entry<String,String> givenFile:givenFiles.entrySet()){
+            newAddStage.put(givenFile.getKey(),givenFile.getValue());
+        }
+
+        //ok,所有遍历结束
 
     }
 
