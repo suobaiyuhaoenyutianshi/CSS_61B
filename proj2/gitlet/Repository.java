@@ -735,13 +735,13 @@ public class Repository {
          for(Map.Entry<String,String> splitfile:splitFiles.entrySet()){
              //在遍历spilit的文件时对于split的文件只有修改与没被修改，删除了也是一种修改，1：cure的删除，given存在看given的与spilit同不同，不同是冲突，同保持删除状态；given删除同理，不过同是删除，并添加到rm区  2 如果cur的文件或given的文件与soilit相同，而另个不同，则存不同的 3，两个文件存在，都不同，冲突
            //本质只有cuurent?given?split
-             String splitfileName =
+             String splitfileName = splitfile.getKey();
              String splitFileContent = splitfile.getValue();
-             String currentFileContent = (currFiles.get(splitfile.getKey()) == null)?"":currFiles.get(splitfile.getKey());
-             String givenFileContent = (givenFiles.get(splitfile.getKey()) == null)?"":givenFiles.get(splitfile.getKey());
+             String currentFileContent = (currFiles.get(splitfileName) == null)?"":currFiles.get(splitfileName);
+             String givenFileContent = (givenFiles.get(splitfileName) == null)?"":givenFiles.get(splitfileName);
              if(currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
-                 newSnaoShot.put(splitfile.getKey(),splitFileContent);
-                 currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                 newSnaoShot.put(splitfileName,splitFileContent);
+                 currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                  continue;
              }
              if(currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent)){
@@ -749,12 +749,12 @@ public class Repository {
                   boolean fileStage = Repository.ProceesGiveUnequalSplitEquualcuure(currentFileContent,givenFileContent,splitFileContent);
                  //不要返回删除这文件，最后所有文件处理后由newsnaap处理加载
                  if(fileStage){
-                     newAddStage.put(splitfile.getKey(),givenFileContent);
-                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     newAddStage.put(splitfileName,givenFileContent);
+                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                      continue;
                  }else{
-                     newRmStage.put(splitfile.getKey(),givenFileContent);
-                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     newRmStage.put(splitfileName,givenFileContent);
+                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                      continue;
                  }
              }
@@ -762,11 +762,11 @@ public class Repository {
              if(!currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
                  boolean fileSnap = Repository.ProcessCurrUnequalSplitEqualGiven(currentFileContent,givenFileContent,splitFileContent);
                  if(fileSnap){
-                     newSnaoShot.put(splitfile.getKey(),currentFileContent);
-                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     newSnaoShot.put(splitfileName,currentFileContent);
+                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                      continue;
                  }else{//这只能说明文件是不在的，无法加到暂存区
-                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                      continue;
                  }
 
@@ -774,21 +774,21 @@ public class Repository {
              if(!currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent) && currentFileContent.equals(givenFileContent)){
                  boolean fileSnap = Repository.ProcessCurrEqualGivenUnequalSplit(currentFileContent,givenFileContent,splitFileContent);
                  if(fileSnap){
-                     newSnaoShot.put(splitfile.getKey(),currentFileContent);
-                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     newSnaoShot.put(splitfileName,currentFileContent);
+                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                      continue;
 
                  }else {
-                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                      continue;
                  }
              }
             if(!currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent) && !currentFileContent.equals(givenFileContent)){
                 //即三者都不同
-                String newaddStageBlob = Repository.conflicFile(currentFileContent,givenFileContent,splitfile.getKey());
+                String newaddStageBlob = Repository.conflicFile(currentFileContent,givenFileContent,splitfileName);
                 //加到暂存add区
-                newAddStage.put(splitfile.getKey(),newaddStageBlob);
-                currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                newAddStage.put(splitfileName,newaddStageBlob);
+                currFiles.remove(splitfileName);givenFiles.remove(splitfileName);splitFiles.remove(splitfileName);
                 continue;
             }
 
