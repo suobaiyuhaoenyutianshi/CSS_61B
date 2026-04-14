@@ -354,14 +354,11 @@ public class Repository {
                 findedCommitName.add(commitName);
             }
         }
-        if(findedCommitName.size() >1){
-            System.out.println("请多输入几位数");
+        if(findedCommitName.size() >1 || findedCommitName.isEmpty()){
+            System.out.println("No commit with that id exists.");
             return null;
         }
-        if (findedCommitName.isEmpty()){
-            System.out.println("该commit不存在");
-            return null;
-        }
+
         return findedCommitName.get(0);
 
     }
@@ -612,6 +609,230 @@ public class Repository {
     }
 
 
+    public static void findCommitMessege(String commitMessege){
+        List<String> GlobalCommitIds = Utils.plainFilenamesIn(Repository.COMMIT_path);
+        int i = 0;
+        for (String commitId:GlobalCommitIds){
+            Commit commit = Utils.readObject(Utils.join(Repository.COMMIT_path,commitId),Commit.class);
+            if(commit.calMessege().equals(commitMessege)){
+                System.out.println(commit.SHA);
+                i++;
+            }
+        }
+        if(i == 0){
+            System.out.println("Found no commit with that message.");
+        }
+    }
+
+    //输入commitId,将snapShot区将加载它的TreeMap
+    private static void updataSnapShotCache(String commitID){
+        Commit commitContent = Utils.readObject(Utils.join(Repository.COMMIT_path,commitID),Commit.class);
+        TreeMap<String,String> files = commitContent.commitFiles();
+        Utils.writeObject(Repository.SnapSHOTCACHE_path,files);
+    }
+
+    public static void reset(String commitID){
+        //先检查add区域rm区是否有东西
+        TreeMap<String,String> addStage = Utils.readObject(Repository.ADD_path,TreeMap.class);
+        TreeMap<String,String> rmStage =Utils.readObject(Repository.RM_path,TreeMap.class);
+        if(!addStage.isEmpty() || !rmStage.isEmpty()){
+            System.out.println("暂存区有东西");
+            return;
+        }
+
+        commitID = findFullCommitId(commitID);
+        if(commitID == null)return;
+        File HEADCommitSHAFile = Utils.join(Repository.GITLET_DIR,"refs","heads",Utils.readContentsAsString(Utils.join(Repository.GITLET_DIR,"HEAD")));
+        Utils.writeContents(HEADCommitSHAFile,commitID);
+        //更新snapshot
+        Repository.updataSnapShotCache(commitID);
+    }
+    private static List<String> commitSHALog(Commit commitContent,List<String> commitsSHA){
+        commitsSHA.add(commitContent.SHA);
+        if(commitContent.calParent1().equals("")){
+            return commitsSHA;
+        }
+
+        commitContent = Utils.readObject(Utils.join(Repository.COMMIT_path,commitContent.calParent1()),Commit.class);
+
+        return commitSHALog(commitContent,commitsSHA);
+    }
+    //遍历merge查父
+    private static Commit mergeFather(List<String> currentCommitLog ,Commit mergecommit){
+        if(currentCommitLog.contains(mergecommit.SHA))return mergecommit;
+        mergecommit = Utils.readObject(Utils.join(Repository.COMMIT_path,mergecommit.calParent1()),Commit.class);
+        return mergeFather(currentCommitLog,mergecommit);
+    }
+    private static Commit fatherCommit(Commit nowHEAD,Commit mergedBranch){
+        List<String> curremtCommitLog = new ArrayList<>();
+       List<String> currentLogHAS = Repository.commitSHALog(nowHEAD,curremtCommitLog);
+       return Repository.mergeFather(curremtCommitLog,mergedBranch);
+
+    }
+
+    //先对比Commit,但凡spilit与其中一个相同，更新snap区  返回true，结束
+    private static boolean compareCommit(Commit nowCommit,Commit mergeCommit,Commit spilit){
+        String currCommitId =nowCommit.SHA;
+        String  givenCommitId = mergeCommit.SHA;
+        String spilitCommitId =spilit.SHA;
+        if(spilitCommitId.equals(currCommitId) && !givenCommitId.equals(spilitCommitId)){
+            System.out.println("Current branch fast-forwarded.");
+            Utils.writeObject(Repository.SnapSHOTCACHE_path,mergeCommit);
+            return true;
+        }
+        if (spilitCommitId.equals(givenCommitId) && !spilitCommitId.equals(currCommitId)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            Utils.writeObject(Repository.SnapSHOTCACHE_path,nowCommit);
+            return true;
+        }
+        if(spilitCommitId.equals(currCommitId) && spilitCommitId.equals(givenCommitId)){
+            return true;
+        }
+        if(currCommitId.equals(givenCommitId))return true;
+        return false;
+    }
+    //处理curr!=given!=split
+        private static String conflicFile(String currBolbFileId,String givenBlobFileId,String Filename){
+            String currBlobContent = (currBolbFileId == null)?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,currBolbFileId));
+            String givebBlobContent = (givenBlobFileId == null)?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,givenBlobFileId));
+            String updateContent = "<<<<<<< HEAD\n" + currBlobContent + "\n=======\n" + givebBlobContent + "\n>>>>>>>\n";
+            Utils.writeContents(Utils.join(Repository.CWD,Filename),updateContent);
+            //加到暂存区add,与生成blob值
+            String blobHSA = Utils.sha1(updateContent);
+            Utils.writeContents(Utils.join(Repository.BLOB_path,blobHSA),updateContent);
+            return blobHSA;
+
+        }
+    //处理curr != split && given != split && curr == given 即curr == given !=split
+    private static boolean ProcessCurrEqualGivenUnequalSplit(String currContent,String giveContent,String splitContent){
+        if(currContent.equals("")) return false;
+        return true;
+    }
+
+    //处理curr != split && given == split 即curr != given == split
+    private static boolean ProcessCurrUnequalSplitEqualGiven(String currFile,String giveFile,String splitFile){
+        if(currFile.equals("")) return false;
+        return true;
+    }
+//处理curr == split && given != split 即given != curr == split
+    private static boolean ProceesGiveUnequalSplitEquualcuure(String currentFileContent ,String givenFileContent ,String splitFileContent){
+        if(givenFileContent.equals("")){
+            return false;
+        }
+        return true;
+    }
+    //处理 curr == given == split 太简单了，方式不写了
+    private static void proceesCommitFiles(TreeMap<String,String> currFiles,TreeMap<String,String> givenFiles,TreeMap<String,String> splitFiles){
+        //创建新的空位之后snap区add区，rm区更新做准备
+        TreeMap<String,String> newSnaoShot = new TreeMap<>();
+        TreeMap<String,String> newAddStage = new TreeMap<>();
+        TreeMap<String,String> newRmStage = new TreeMap<>();
+        /**String cuurntFileContent;
+        String givenFileContent;
+        String splitFileContent;*/
+        //文件会出现冲突,与没有冲突，没冲突的直接加到新snanp上
+        //先spilit开始
+         for(Map.Entry<String,String> splitfile:splitFiles.entrySet()){
+             //在遍历spilit的文件时对于split的文件只有修改与没被修改，删除了也是一种修改，1：cure的删除，given存在看given的与spilit同不同，不同是冲突，同保持删除状态；given删除同理，不过同是删除，并添加到rm区  2 如果cur的文件或given的文件与soilit相同，而另个不同，则存不同的 3，两个文件存在，都不同，冲突
+           //本质只有cuurent?given?split
+             String splitfileName =
+             String splitFileContent = splitfile.getValue();
+             String currentFileContent = (currFiles.get(splitfile.getKey()) == null)?"":currFiles.get(splitfile.getKey());
+             String givenFileContent = (givenFiles.get(splitfile.getKey()) == null)?"":givenFiles.get(splitfile.getKey());
+             if(currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
+                 newSnaoShot.put(splitfile.getKey(),splitFileContent);
+                 currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                 continue;
+             }
+             if(currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent)){
+                 //true是加到add,false是rm
+                  boolean fileStage = Repository.ProceesGiveUnequalSplitEquualcuure(currentFileContent,givenFileContent,splitFileContent);
+                 //不要返回删除这文件，最后所有文件处理后由newsnaap处理加载
+                 if(fileStage){
+                     newAddStage.put(splitfile.getKey(),givenFileContent);
+                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     continue;
+                 }else{
+                     newRmStage.put(splitfile.getKey(),givenFileContent);
+                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     continue;
+                 }
+             }
+             //true是存在
+             if(!currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
+                 boolean fileSnap = Repository.ProcessCurrUnequalSplitEqualGiven(currentFileContent,givenFileContent,splitFileContent);
+                 if(fileSnap){
+                     newSnaoShot.put(splitfile.getKey(),currentFileContent);
+                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     continue;
+                 }else{//这只能说明文件是不在的，无法加到暂存区
+                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     continue;
+                 }
+
+             }
+             if(!currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent) && currentFileContent.equals(givenFileContent)){
+                 boolean fileSnap = Repository.ProcessCurrEqualGivenUnequalSplit(currentFileContent,givenFileContent,splitFileContent);
+                 if(fileSnap){
+                     newSnaoShot.put(splitfile.getKey(),currentFileContent);
+                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     continue;
+
+                 }else {
+                     currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                     continue;
+                 }
+             }
+            if(!currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent) && !currentFileContent.equals(givenFileContent)){
+                //即三者都不同
+                String newaddStageBlob = Repository.conflicFile(currentFileContent,givenFileContent,splitfile.getKey());
+                //加到暂存add区
+                newAddStage.put(splitfile.getKey(),newaddStageBlob);
+                currFiles.remove(splitfile.getKey());givenFiles.remove(splitfile.getKey());splitFiles.remove(splitfile.getKey());
+                continue;
+            }
+
+         }
+
+
+
+    }
+
+
+
+
+
+    public static void merge(String mergeBranch){
+        //检查该被合并分支是否存在
+        List<String> points = Utils.plainFilenamesIn(Utils.join(Repository.GITLET_DIR,"refs","heads"));
+        if(!points.contains(mergeBranch)){
+            System.out.println("该被合并的分支不存在");
+            return;
+        }
+        //若暂存区add与rm区还有东西，退出
+        TreeMap<String,String> addStage =Utils.readObject(Repository.ADD_path,TreeMap.class);
+        TreeMap<String,String> rmStage = Utils.readObject(Repository.RM_path,TreeMap.class)
+;        if(!addStage.isEmpty() || !rmStage.isEmpty()){
+            System.out.println("stage has files");
+            return;
+        }
+        //无论怎么样都要找到共同的父节点
+        Commit nowHEAD = Utils.readObject(Repository.findBranchCommitFile(),Commit.class);
+        Commit mergedCommitBranch = Repository.strNamePointXFindCommit(mergeBranch);
+        //返回共同的父节点Commit提交
+        Commit spilit = fatherCommit(nowHEAD,mergedCommitBranch);
+        //snap暂存区不处理先，有下面更新处理；
+
+        //先对比Commit,但凡spilit与其中一个相同，且另个不同，更新snap区 或两个都相同  返回true，结束
+        if(Repository.compareCommit(nowHEAD,mergedCommitBranch,spilit)){
+            System.out.println("单纯commit更新");
+            return;
+        }
+        //上面没返回，说明3个commit不同，那么每个文件都要查
+        TreeMap<String,String> currentFiles = nowHEAD.commitFiles();
+        TreeMap<String,String> givenFiles = mergedCommitBranch.commitFiles();
+        Repository.proceesCommitFiles(currentFiles,givenFiles,spilit.commitFiles());
+    }
 
 
 
@@ -619,6 +840,32 @@ public class Repository {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //通过分支的名字找到它的commit，返回commit
+    private static Commit strNamePointXFindCommit(String mergename){
+        String mergeCommitId = Utils.readContentsAsString(Utils.join(Repository.GITLET_DIR,"refs","heads",mergename));
+        return Utils.readObject(Utils.join(Repository.COMMIT_path,mergeCommitId),Commit.class);
+
+    }
 
 
 
