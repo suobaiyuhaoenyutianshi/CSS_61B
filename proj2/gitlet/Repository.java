@@ -209,8 +209,7 @@ public class Repository {
                 Utils.writeObject(Repository.RM_path,rmFileMap);
             }
 
-
-            public static void commitFile(String message){
+    public static void commitFile(String message){
                 //生成新的commit,父节点1是上次的commit的hsa，
                 TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
                 TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
@@ -678,8 +677,12 @@ public class Repository {
         if(spilitCommitId.equals(currCommitId) && !givenCommitId.equals(spilitCommitId)){
             System.out.println("Current branch fast-forwarded.");
             Utils.writeObject(Repository.SnapSHOTCACHE_path,mergeCommit.commitFiles());
-            //生成merge的文件
-            TreeMap<String,String> givenFiles = m
+            //生成merge的文件在目录
+            TreeMap<String,String> givenFiles = mergeCommit.commitFiles();
+            for (Map.Entry<String,String>file:givenFiles.entrySet()){
+                String content = Utils.readContentsAsString(Utils.join(Repository.BLOB_path, file.getValue()));
+                Utils.writeContents(Utils.join(Repository.CWD,file.getKey()),content);
+            }
             return true;
         }
         if (spilitCommitId.equals(givenCommitId) && !spilitCommitId.equals(currCommitId)) {
@@ -725,7 +728,7 @@ public class Repository {
     //处理 curr == given == split 太简单了，方式不写了
     private static void proceesCommitFiles(TreeMap<String,String> currFiles,TreeMap<String,String> givenFiles,TreeMap<String,String> splitFiles){
         //创建新的空位之后snap区add区，rm区更新做准备
-        TreeMap<String,String> newSnaoShot = new TreeMap<>();
+        TreeMap<String,String> newSnapShot = new TreeMap<>();
         TreeMap<String,String> newAddStage = new TreeMap<>();
         TreeMap<String,String> newRmStage = new TreeMap<>();
         //被删文件，每个for循环后清空
@@ -743,7 +746,7 @@ public class Repository {
              String currentFileContent = (currFiles.get(splitfileName) == null)?"":currFiles.get(splitfileName);
              String givenFileContent = (givenFiles.get(splitfileName) == null)?"":givenFiles.get(splitfileName);
              if(currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
-                 newSnaoShot.put(splitfileName,splitFileContent);
+                 newSnapShot.put(splitfileName,splitFileContent);
                  ProcessedDocuments.add(splitfileName);
                  continue;
              }
@@ -765,7 +768,7 @@ public class Repository {
              if(!currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
                  boolean fileSnap = Repository.ProcessCurrUnequalSplitEqualGiven(currentFileContent,givenFileContent,splitFileContent);
                  if(fileSnap){
-                     newSnaoShot.put(splitfileName,currentFileContent);
+                     newSnapShot.put(splitfileName,currentFileContent);
                      ProcessedDocuments.add(splitfileName);
                      continue;
                  }else{//这只能说明文件是不在的，无法加到暂存区
@@ -777,7 +780,7 @@ public class Repository {
              if(!currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent) && currentFileContent.equals(givenFileContent)){
                  boolean fileSnap = Repository.ProcessCurrEqualGivenUnequalSplit(currentFileContent,givenFileContent,splitFileContent);
                  if(fileSnap){
-                     newSnaoShot.put(splitfileName,currentFileContent);
+                     newSnapShot.put(splitfileName,currentFileContent);
                      ProcessedDocuments.add(splitfileName);
                      continue;
 
@@ -810,14 +813,14 @@ public class Repository {
             String givenFileContent = (givenFiles.get(currentFileName) == null)?"":givenFiles.get(currentFileName);
             if(currFileContent.equals(givenFileContent)){
                //curr一定存在
-                newSnaoShot.put(currentFileName,currFileContent);
+                newSnapShot.put(currentFileName,currFileContent);
                 ProcessedDocuments.add(currentFileName);
 
             }
             else {
                 //given是null，而split也是null,直接加入newSnap
                 if(givenFileContent == null){
-                    newSnaoShot.put(currentFileName,currFileContent);
+                    newSnapShot.put(currentFileName,currFileContent);
 
                 }//不相同还存在，冲突
                else {
@@ -838,8 +841,13 @@ public class Repository {
         for(Map.Entry<String,String> givenFile:givenFiles.entrySet()){
             newAddStage.put(givenFile.getKey(),givenFile.getValue());
         }
-
+        
         //ok,所有遍历结束
+        //处理new
+        //加载到暂存区
+        Utils.writeObject(Repository.SnapSHOTCACHE_path,newSnapShot);
+        Utils.writeObject(Repository.RM_path,newRmStage);
+        Utils.writeObject(Repository.ADD_path,newAddStage);
 
     }
 
@@ -856,8 +864,8 @@ public class Repository {
         }
         //若暂存区add与rm区还有东西，退出
         TreeMap<String,String> addStage =Utils.readObject(Repository.ADD_path,TreeMap.class);
-        TreeMap<String,String> rmStage = Utils.readObject(Repository.RM_path,TreeMap.class)
-;        if(!addStage.isEmpty() || !rmStage.isEmpty()){
+        TreeMap<String,String> rmStage = Utils.readObject(Repository.RM_path,TreeMap.class);
+        if(!addStage.isEmpty() || !rmStage.isEmpty()){
             System.out.println("stage has files");
             return;
         }
@@ -871,38 +879,16 @@ public class Repository {
         //先对比Commit,但凡spilit与其中一个相同，且另个不同，更新snap区 或两个都相同  返回true，结束
         if(Repository.compareCommit(nowHEAD,mergedCommitBranch,spilit)){
             System.out.println("单纯commit更新");
+            //合并后，提交
+            Repository.commitFile("merge",nowHEAD.SHA,mergedCommitBranch.SHA);
             return;
         }
         //上面没返回，说明3个commit不同，那么每个文件都要查
         TreeMap<String,String> currentFiles = nowHEAD.commitFiles();
         TreeMap<String,String> givenFiles = mergedCommitBranch.commitFiles();
         Repository.proceesCommitFiles(currentFiles,givenFiles,spilit.commitFiles());
+        commitFile("merge",nowHEAD.SHA,mergedCommitBranch.SHA);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     //通过分支的名字找到它的commit，返回commit
@@ -913,34 +899,43 @@ public class Repository {
     }
 
 
+//第二种的commitfile，主要之前的那个不能乱动
+public static void commitFile(String message,String newParent1,String newParent2){
+    //生成新的commit,父节点1是上次的commit的hsa，
+    TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
+    TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
+    TreeMap<String ,String> snapShotCAche = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+    //当前分支commit的TreeMAp
+    Commit HEADCommit = Utils.readObject(Repository.findBranchCommitFile(),Commit.class);
+    TreeMap<String,String> HEADTreeMap = HEADCommit.commitFiles();
+    if(!addcontents.isEmpty()){
+        snapShotCAche.putAll(addcontents);
+    }
+    if(!rmContents.isEmpty()){
+        for(String rmKey:rmContents.keySet()){
+            snapShotCAche.remove(rmKey);
+        }
 
+    }
 
+    if(HEADTreeMap.equals(snapShotCAche)){
+        System.out.println("No changes added to the commit.");
+        return;
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    //将snapSHot输入回去
+    Utils.writeObject(Repository.SnapSHOTCACHE_path,snapShotCAche);
+    //生成commit给object/commit
+    Commit submit = new Commit(message,newParent1,newParent2,snapShotCAche);
+    Utils.writeObject(Utils.join(Repository.COMMIT_path,submit.SHA),submit);
+    // 更新当前分支指针
+    //HEAD是分支映射，还在这分支，我们也没有新建分支.gitlet/refs/heads/没添加内容，修改.gitlet/refs/heads/master里master内容即可
+    Utils.writeContents(Repository.findBranch(),submit.SHA);
+    //清理暂存区的add区与rm区,snapshotCache 通常不需要清空，因为它应始终反映下一次提交的完整快照（在 commit 后应更新为新 commit 的 files，而不是清空）
+    TreeMap<String, String> empty = new TreeMap<>();
+    Utils.writeObject(Repository.ADD_path,empty);
+    Utils.writeObject(Repository.RM_path,empty);
+}
 
 
 
