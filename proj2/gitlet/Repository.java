@@ -302,18 +302,40 @@ public class Repository {
                     return;
                 }
                 TreeMap<String,String> files = Repository.ModificationItems(addStage,rmStage);
-                if(files != null && !files.isEmpty()){
+                if( !files.isEmpty()){
                     System.out.println("\"There is an untracked file in the way; delete it, or add and commit it first.\"");
                     return;
 
+                }
+                //去除跟踪的文件,即未跟踪文件
+                List<String> Untrackfiles = Repository.UntrackItems(addStage,rmStage);
+            //切换到这的分支需要检查，切换的分支是否有与未跟踪分支有相同文件
+                //切换分支的commit
+            Commit switchBranch = strNamePointXFindCommit(branchName);
+                TreeMap<String,String> switchBranchContent = switchBranch.commitFiles();
+                List<String> sameFiles = new ArrayList<>();
+                for(Map.Entry<String,String> switchFile:switchBranchContent.entrySet()){
+                    if(Untrackfiles.contains(switchFile.getKey())){
+                       sameFiles.add(switchFile.getKey());
+                    }
+                }
+                if(!sameFiles.isEmpty()){
+                    System.out.println("切换的分支与该分支中未跟踪的文件相同");
+                    for(String sameFile:sameFiles){
+                        System.out.println(sameFile+" ");
+                    }
+                    return;
                 }
                 File pointHEAD = Utils.join(Repository.GITLET_DIR,"HEAD");
                 Utils.writeContents(pointHEAD,branchName);
                 File HEADCommitfile = findBranchCommitFile();
                 //更新snapShot区
+            //旧的
+                TreeMap<String,String> oldFiles = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
                 Commit HEADSnapShotCommit = Utils.readObject(HEADCommitfile,Commit.class);
                 TreeMap<String,String> HEADSnapShot = HEADSnapShotCommit.commitFiles();
                 Utils.writeObject(Repository.SnapSHOTCACHE_path,HEADSnapShot);
+                Repository.updateFiles(HEADSnapShot,oldFiles);
         }
 
 
@@ -634,10 +656,13 @@ public class Repository {
         //先检查add区域rm区是否有东西
         TreeMap<String,String> addStage = Utils.readObject(Repository.ADD_path,TreeMap.class);
         TreeMap<String,String> rmStage =Utils.readObject(Repository.RM_path,TreeMap.class);
+        //旧的
+        TreeMap<String,String> oldFiles = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
         if(!addStage.isEmpty() || !rmStage.isEmpty()){
             System.out.println("暂存区有东西");
             return;
         }
+        //
 
         commitID = findFullCommitId(commitID);
         if(commitID == null)return;
@@ -645,6 +670,9 @@ public class Repository {
         Utils.writeContents(HEADCommitSHAFile,commitID);
         //更新snapshot
         Repository.updataSnapShotCache(commitID);
+        //新的
+        TreeMap<String,String> newfiles = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+        Repository.updateFiles(newfiles,oldFiles);
     }
     private static List<String> commitSHALog(Commit commitContent,List<String> commitsSHA){
         commitsSHA.add(commitContent.SHA);
@@ -679,11 +707,9 @@ public class Repository {
             Utils.writeObject(Repository.SnapSHOTCACHE_path,mergeCommit.commitFiles());
             //生成merge的文件在目录
             TreeMap<String,String> givenFiles = mergeCommit.commitFiles();
-            for (Map.Entry<String,String>file:givenFiles.entrySet()){
-                String content = Utils.readContentsAsString(Utils.join(Repository.BLOB_path, file.getValue()));
-                Utils.writeContents(Utils.join(Repository.CWD,file.getKey()),content);
-            }
+
             Utils.writeContents(Repository.findBranch(),mergeCommit.SHA);
+            Repository.updateFiles(givenFiles,nowCommit.commitFiles());
             return true;
         }
         if (spilitCommitId.equals(givenCommitId) && !spilitCommitId.equals(currCommitId)) {
@@ -701,7 +727,8 @@ public class Repository {
             String currBlobContent = (currBolbFileId.equals(""))?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,currBolbFileId));
             String givebBlobContent = (givenBlobFileId.equals(""))?"":Utils.readContentsAsString(Utils.join(Repository.BLOB_path,givenBlobFileId));
             String updateContent = "<<<<<<< HEAD\n" + currBlobContent + "\n=======\n" + givebBlobContent + "\n>>>>>>>\n";
-            Utils.writeContents(Utils.join(Repository.CWD,Filename),updateContent);
+            //不因直接修该，
+           // Utils.writeContents(Utils.join(Repository.CWD,Filename),updateContent);
             //加到暂存区add,与生成blob值
             String blobHSA = Utils.sha1(updateContent);
             Utils.writeContents(Utils.join(Repository.BLOB_path,blobHSA),updateContent);
@@ -728,6 +755,9 @@ public class Repository {
     }
     //处理 curr == given == split 太简单了，方式不写了
     private static void proceesCommitFiles(TreeMap<String,String> currFiles,TreeMap<String,String> givenFiles,TreeMap<String,String> splitFiles){
+        currFiles = new TreeMap<>(currFiles);
+        givenFiles = new TreeMap<>(givenFiles);
+        splitFiles = new TreeMap<>(splitFiles);
         //创建新的空位之后snap区add区，rm区更新做准备
         TreeMap<String,String> newSnapShot = new TreeMap<>();
         TreeMap<String,String> newAddStage = new TreeMap<>();
@@ -883,13 +913,28 @@ public class Repository {
             return;
         }
         //上面没返回，说明3个commit不同，那么每个文件都要查
-        TreeMap<String,String> currentFiles = nowHEAD.commitFiles();
-        TreeMap<String,String> givenFiles = mergedCommitBranch.commitFiles();
+        TreeMap<String,String> currentFiles = new TreeMap<>(nowHEAD.commitFiles());
+        TreeMap<String,String> givenFiles = new TreeMap<>(mergedCommitBranch.commitFiles();
         Repository.proceesCommitFiles(currentFiles,givenFiles,spilit.commitFiles());
         commitFile("merge",nowHEAD.SHA,mergedCommitBranch.SHA);
         //打印commit即snap的文件
-       z到底zzzzzzon要 //写个读取snap区的信息将blob文件加载到当前目录，reset与checkout [branch]也需要
-        TreeMap<String,String>
+        //写个读取snap区的信息将blob文件加载到当前目录，reset与checkout [branch]也需要，不对合并已经写了，不对冲突只是应该加到blob文件，不因直接修改原文件，在commit在根据snap修改
+        //根据更新后的snap区跟新目录文件
+        TreeMap<String,String> updateSnap = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+        //旧就是现在的未更新前snap
+        Repository.updateFiles(updateSnap,currentFiles);
+    }
+    private static void updateFiles(TreeMap<String,String> newfiles,TreeMap<String,String> oldFiles){
+//先获取当前工作目录中的所有文件（或根据旧快照）。
+//
+//对比新快照，如果某个文件只存在于工作目录而新快照中没有，则删除它
+        for(Map.Entry<String,String> newFile:newfiles.entrySet()){
+            Utils.writeContents(Utils.join(Repository.CWD,newFile.getKey()),Utils.readContents(Utils.join(Repository.BLOB_path,newFile.getValue())));
+            oldFiles.remove(newFile.getKey());
+        }
+        for (Map.Entry<String,String> oldFile:oldFiles.entrySet()){
+            Utils.restrictedDelete(Utils.join(Repository.CWD,oldFile.getKey()));
+        }
     }
 
 
@@ -937,6 +982,7 @@ public static void commitFile(String message,String newParent1,String newParent2
     TreeMap<String, String> empty = new TreeMap<>();
     Utils.writeObject(Repository.ADD_path,empty);
     Utils.writeObject(Repository.RM_path,empty);
+
 }
 
 
