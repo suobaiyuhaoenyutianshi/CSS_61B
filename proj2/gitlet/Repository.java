@@ -452,8 +452,8 @@ public class Repository {
         //暂存区add,即动过 且没脱离跟踪
         for(Map.Entry<String,String> addEntry:addStage.entrySet()){
             File addFile = Utils.join(Repository.CWD,addEntry.getKey());
-            //文件不在
-            if(!addFile.exists() && rmStage.containsKey(addEntry.getKey())){
+            //文件不在&& rmStage.containsKey(addEntry.getKey())
+            if(!addFile.exists() ){
                 informations.put(addEntry.getKey(),"deleted");
             }
             //文件在
@@ -683,6 +683,7 @@ public class Repository {
                 String content = Utils.readContentsAsString(Utils.join(Repository.BLOB_path, file.getValue()));
                 Utils.writeContents(Utils.join(Repository.CWD,file.getKey()),content);
             }
+            Utils.writeContents(Repository.findBranch(),mergeCommit.SHA);
             return true;
         }
         if (spilitCommitId.equals(givenCommitId) && !spilitCommitId.equals(currCommitId)) {
@@ -879,8 +880,6 @@ public class Repository {
         //先对比Commit,但凡spilit与其中一个相同，且另个不同，更新snap区 或两个都相同  返回true，结束
         if(Repository.compareCommit(nowHEAD,mergedCommitBranch,spilit)){
             System.out.println("单纯commit更新");
-            //合并后，提交
-            Repository.commitFile("merge",nowHEAD.SHA,mergedCommitBranch.SHA);
             return;
         }
         //上面没返回，说明3个commit不同，那么每个文件都要查
@@ -888,6 +887,9 @@ public class Repository {
         TreeMap<String,String> givenFiles = mergedCommitBranch.commitFiles();
         Repository.proceesCommitFiles(currentFiles,givenFiles,spilit.commitFiles());
         commitFile("merge",nowHEAD.SHA,mergedCommitBranch.SHA);
+        //打印commit即snap的文件
+       zzzzzzzon要 //写个读取snap区的信息将blob文件加载到当前目录，reset与checkout [branch]也需要
+        TreeMap<String,String>
     }
 
 
