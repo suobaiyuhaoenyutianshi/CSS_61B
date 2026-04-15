@@ -89,6 +89,20 @@ public class Main {
                 break;
             case "global-log":
                 Repository.viewedGlobalLog();
+                break;
+            case "find":
+//打印所有具有指定消息的 commit 的 SHA-1（每行一个），若无则输出 `"Found no commit with that message."`
+                String commitMessege = args[1];
+                Repository.findCommitMessege(commitMessege);
+                break;
+            case "reset":
+            String pointCommitId = args[1];
+            Repository.reset(pointCommitId);
+            break;
+            case "merge":
+                String mergeName = args[1];
+                Repository.merge(mergeName);
+
         }
 
 

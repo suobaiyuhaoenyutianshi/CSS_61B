@@ -31,6 +31,11 @@ public class Commit implements Serializable, Dumpable {
     private TreeMap<String, String> files; // 文件名 -> blob SHA-1 ,因为blob只存了文件序列化，没有文件名，需要文件名做建，保留在commit中做对应
     //把哈希值存下来以免反复计算
     public String SHA;
+    public Commit(String message , String parent1 , String parent2, TreeMap<String,String> files,String date){
+        this(message,parent1,parent2,files);
+        this.timeStamp = new Date(0);
+
+    }
     public Commit(String message , String parent1 , String parent2, TreeMap<String,String> files){
         this.message = message;
         this.parent1 = parent1;
@@ -49,6 +54,26 @@ public class Commit implements Serializable, Dumpable {
 
     public TreeMap<String,String> commitFiles(){
         return this.files;
+    }
+    public String calParent1(){
+        return  this.parent1;
+    }
+    public String calParent2(){
+        return  this.parent2;
+    }
+    public String calData(){
+        return this.timeStamp.toString();
+    }
+    public String calSHa(){
+        return this.SHA;
+    }
+    public String calMessege(){
+        return this.message;
+    }
+
+
+    public String getShortSHA() {
+        return SHA.substring(0, 7);
     }
     @Override
     public void dump() {

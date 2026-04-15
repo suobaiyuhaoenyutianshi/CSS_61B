@@ -210,6 +210,10 @@ public class Repository {
             }
 
     public static void commitFile(String message){
+        if (message == null || message.trim().isEmpty()) {
+            System.out.println("Please enter a commit message.");
+            return;
+        }
                 //生成新的commit,父节点1是上次的commit的hsa，
                 TreeMap<String,String> addcontents = Utils.readObject(Repository.ADD_path,TreeMap.class);
                 TreeMap<String,String> rmContents = Utils.readObject(Repository.RM_path ,TreeMap.class);
@@ -320,10 +324,7 @@ public class Repository {
                     }
                 }
                 if(!sameFiles.isEmpty()){
-                    System.out.println("切换的分支与该分支中未跟踪的文件相同");
-                    for(String sameFile:sameFiles){
-                        System.out.println(sameFile+" ");
-                    }
+                    System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                     return;
                 }
                 File pointHEAD = Utils.join(Repository.GITLET_DIR,"HEAD");
@@ -353,7 +354,7 @@ public class Repository {
         //读取TreeMap
         TreeMap<String,String> pointCommitTreeMap = pointCommit.commitFiles();
         if(!pointCommitTreeMap.containsKey(fileName)){
-            System.out.println("this pointCommit not exist " + fileName);
+            System.out.println("File does not exist in that commit.");
             return;
         }
         //存在则
@@ -389,7 +390,7 @@ public class Repository {
             System.out.println("===");
             System.out.println("commit "+ commitcontent.SHA);
             if(!commitcontent.calParent2().equals("")){
-                System.out.println("Merge : "+ commitcontent.calParent1().substring(0, 7) + commitcontent.calParent2().substring(0, 7));
+                System.out.println("Merge :  "+ commitcontent.calParent1().substring(0, 7) + " " + commitcontent.calParent2().substring(0, 7));
             }
             System.out.println(commitcontent.calData());
             System.out.println(commitcontent.calMessege());
@@ -463,7 +464,7 @@ public class Repository {
 
     private static void printInformationREcored(TreeMap<String,String> informations){
             for (Map.Entry<String,String> informtion:informations.entrySet()){
-                System.out.println(informtion.getKey() +" " +  informtion.getValue());
+                System.out.println(informtion.getKey() + " (" + informtion.getValue() + ")");
             }
         System.out.println();System.out.println();
     }
@@ -483,7 +484,7 @@ public class Repository {
                 byte[]  contence = Utils.readContents(addFile);
                 String fileSHA = Utils.sha1(contence);
                 if(!addEntry.getValue().equals(fileSHA)){
-                    informations.put(addEntry.getKey(),"modify");
+                    informations.put(addEntry.getKey(),"modififed");
                 }
             }
 
@@ -506,7 +507,7 @@ public class Repository {
                 byte [] contentence = Utils.readContents(file);
                 String fileHSA = Utils.sha1(contentence);
                 if(!entry.getValue().equals(fileHSA)){
-                    informations.put(entry.getKey(),"modify");
+                    informations.put(entry.getKey(),"modififed");
                 }
             }
         }
@@ -619,7 +620,7 @@ public class Repository {
             System.out.println("===");
             System.out.println("commit "+ commitcontent.SHA);
             if(!commitcontent.calParent2().equals("")){
-                System.out.println("Merge : "+ commitcontent.calParent1().substring(0, 7) + commitcontent.calParent2().substring(0, 7));
+                System.out.println("Merge :  "+ commitcontent.calParent1().substring(0, 7) + " " + commitcontent.calParent2().substring(0, 7));
             }
             System.out.println(commitcontent.calData());
             System.out.println(commitcontent.calMessege());
@@ -653,26 +654,49 @@ public class Repository {
     }
 
     public static void reset(String commitID){
-        //先检查add区域rm区是否有东西
-        TreeMap<String,String> addStage = Utils.readObject(Repository.ADD_path,TreeMap.class);
-        TreeMap<String,String> rmStage =Utils.readObject(Repository.RM_path,TreeMap.class);
-        //旧的
-        TreeMap<String,String> oldFiles = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
-        if(!addStage.isEmpty() || !rmStage.isEmpty()){
-            System.out.println("暂存区有东西");
+        commitID = findFullCommitId(commitID);
+        if (commitID == null) return;
+        TreeMap<String ,String> addStage = Utils.readObject(Repository.ADD_path,TreeMap.class);
+        TreeMap<String,String> rmStage = Utils.readObject(Repository.RM_path,TreeMap.class);
+        if(addStage != null && !addStage.isEmpty() || rmStage != null && !rmStage.isEmpty()){
+            System.out.println("the content in the stage has not committed.");
             return;
         }
-        //
+        TreeMap<String,String> files = Repository.ModificationItems(addStage,rmStage);
+        if( !files.isEmpty()){
+            System.out.println("\"There is an untracked file in the way; delete it, or add and commit it first.\"");
+            return;
 
-        commitID = findFullCommitId(commitID);
-        if(commitID == null)return;
-        File HEADCommitSHAFile = Utils.join(Repository.GITLET_DIR,"refs","heads",Utils.readContentsAsString(Utils.join(Repository.GITLET_DIR,"HEAD")));
-        Utils.writeContents(HEADCommitSHAFile,commitID);
-        //更新snapshot
-        Repository.updataSnapShotCache(commitID);
-        //新的
-        TreeMap<String,String> newfiles = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
-        Repository.updateFiles(newfiles,oldFiles);
+        }
+        //去除跟踪的文件,即未跟踪文件
+        List<String> Untrackfiles = Repository.UntrackItems(addStage,rmStage);
+        //切换到这的分支需要检查，切换的分支是否有与未跟踪分支有相同文件
+        //切换分支的commit
+        Commit switchBranch = Utils.readObject(Utils.join(Repository.COMMIT_path, commitID),Commit.class);
+        TreeMap<String,String> switchBranchContent = switchBranch.commitFiles();
+        List<String> sameFiles = new ArrayList<>();
+        for(Map.Entry<String,String> switchFile:switchBranchContent.entrySet()){
+            if(Untrackfiles.contains(switchFile.getKey())){
+                sameFiles.add(switchFile.getKey());
+            }
+        }
+        if(!sameFiles.isEmpty()){
+            System.out.println("切换的分支与该分支中未跟踪的文件相同");
+            for(String sameFile:sameFiles){
+                System.out.println(sameFile+" ");
+            }
+            return;
+        }
+
+        Utils.writeContents(Repository.findBranch(),commitID);
+        File HEADCommitfile = findBranchCommitFile();
+        //更新snapShot区
+        //旧的
+        TreeMap<String,String> oldFiles = Utils.readObject(Repository.SnapSHOTCACHE_path,TreeMap.class);
+        Commit HEADSnapShotCommit = Utils.readObject(HEADCommitfile,Commit.class);
+        TreeMap<String,String> HEADSnapShot = HEADSnapShotCommit.commitFiles();
+        Utils.writeObject(Repository.SnapSHOTCACHE_path,HEADSnapShot);
+        Repository.updateFiles(HEADSnapShot,oldFiles);
     }
     private static List<String> commitSHALog(Commit commitContent,List<String> commitsSHA){
         commitsSHA.add(commitContent.SHA);
@@ -764,6 +788,7 @@ public class Repository {
         TreeMap<String,String> newRmStage = new TreeMap<>();
         //被删文件，每个for循环后清空
         List<String> ProcessedDocuments = new ArrayList<>();
+        boolean conflict = false;
         /**String cuurntFileContent;
         String givenFileContent;
         String splitFileContent;*/
@@ -776,6 +801,7 @@ public class Repository {
              String splitFileContent = splitfile.getValue();
              String currentFileContent = (currFiles.get(splitfileName) == null)?"":currFiles.get(splitfileName);
              String givenFileContent = (givenFiles.get(splitfileName) == null)?"":givenFiles.get(splitfileName);
+             boolean confire;
              if(currentFileContent.equals(splitFileContent) && givenFileContent.equals(splitFileContent)){
                  newSnapShot.put(splitfileName,splitFileContent);
                  ProcessedDocuments.add(splitfileName);
@@ -823,6 +849,7 @@ public class Repository {
             if(!currentFileContent.equals(splitFileContent) && !givenFileContent.equals(splitFileContent) && !currentFileContent.equals(givenFileContent)){
                 //即三者都不同
                 String newaddStageBlob = Repository.conflicFile(currentFileContent,givenFileContent,splitfileName);
+                conflict = true;
                 //加到暂存add区
                 newAddStage.put(splitfileName,newaddStageBlob);
                 ProcessedDocuments.add(splitfileName);
@@ -856,6 +883,7 @@ public class Repository {
                 }//不相同还存在，冲突
                else {
                    String fileSHA = Repository.conflicFile(currFileContent,givenFileContent,currentFileName);
+                   conflict =true;
                    newAddStage.put(currentFileName,fileSHA);
                    ProcessedDocuments.add(currentFileName);
 
@@ -879,7 +907,7 @@ public class Repository {
         Utils.writeObject(Repository.SnapSHOTCACHE_path,newSnapShot);
         Utils.writeObject(Repository.RM_path,newRmStage);
         Utils.writeObject(Repository.ADD_path,newAddStage);
-
+        if(conflict) System.out.println("Encountered a merge conflict.");
     }
 
 
@@ -914,9 +942,11 @@ public class Repository {
         }
         //上面没返回，说明3个commit不同，那么每个文件都要查
         TreeMap<String,String> currentFiles = new TreeMap<>(nowHEAD.commitFiles());
-        TreeMap<String,String> givenFiles = new TreeMap<>(mergedCommitBranch.commitFiles();
+        TreeMap<String,String> givenFiles = new TreeMap<>(mergedCommitBranch.commitFiles());
         Repository.proceesCommitFiles(currentFiles,givenFiles,spilit.commitFiles());
-        commitFile("merge",nowHEAD.SHA,mergedCommitBranch.SHA);
+        String currentBranch = Utils.readContentsAsString(Utils.join(GITLET_DIR, "HEAD")).trim();
+        String mergeMessage = "Merged " + mergeBranch + " into " + currentBranch + ".";
+        commitFile(mergeMessage, nowHEAD.SHA, mergedCommitBranch.SHA);
         //打印commit即snap的文件
         //写个读取snap区的信息将blob文件加载到当前目录，reset与checkout [branch]也需要，不对合并已经写了，不对冲突只是应该加到blob文件，不因直接修改原文件，在commit在根据snap修改
         //根据更新后的snap区跟新目录文件
