@@ -888,7 +888,7 @@ public class Repository {
         Repository.proceesCommitFiles(currentFiles,givenFiles,spilit.commitFiles());
         commitFile("merge",nowHEAD.SHA,mergedCommitBranch.SHA);
         //打印commit即snap的文件
-       zzzzzzzon要 //写个读取snap区的信息将blob文件加载到当前目录，reset与checkout [branch]也需要
+       z到底zzzzzzon要 //写个读取snap区的信息将blob文件加载到当前目录，reset与checkout [branch]也需要
         TreeMap<String,String>
     }
 
