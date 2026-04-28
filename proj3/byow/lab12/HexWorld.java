@@ -27,7 +27,7 @@ public class HexWorld {
 
             for(int k = 0;k < length;k++){
 
-                if(row >=0 && row <world.length && col >= 0&& col<world[0].length ){
+                if(row+k >=0 && row+k <world.length && col >= 0&& col<world[0].length ){
                     world[row +k][col] = tile;
                 }
             }
@@ -39,7 +39,7 @@ public class HexWorld {
 
             for(int k = 0;k < length;k++){
 
-                if(row >=0 && row <world.length && col >= 0&& col<world[0].length ){
+                if(row+k >=0 && row+k <world.length && col >= 0&& col<world[0].length ){
                     world[row +k][col] = tile;
                 }
             }
@@ -61,15 +61,51 @@ public class HexWorld {
 
 
 
+//大的y的单位是小6边形
+    public void GenerateLargeHexagon(TETile[][] world,int smallEdge,int bigEdge,int x,int y){
+        int[] row = new int[]{x + smallEdge + ((smallEdge - 1)*2 + smallEdge)};
+        int[] col = new int[]{ y - smallEdge*(bigEdge -1)};
+        int num = bigEdge;
+       for(int i =0;i < bigEdge;i++){
+            //共big-1竖
+            veritc(world,row,col,smallEdge,num);
+            num++;
+            row[0]= row[0]- (smallEdge -1) -smallEdge;
+           col[0] = col[0] - smallEdge;
+
+
+        }
+      //big -1
+        row[0] = x - smallEdge*bigEdge;
+        col[0]=y - smallEdge*2;
+        num = bigEdge;
+        for(int i =0;i < bigEdge-1;i++){
+            veritc(world,row,col,smallEdge,num);
+            num++;
+            row[0]= row[0]+ (smallEdge -1) +smallEdge;
+            col[0] = col[0] - smallEdge;
+        }
 
 
 
+
+
+
+    }
+    private void veritc(TETile[][] world,int[] x,int[] y,int smallEdge,int num){
+        int inity =y[0];
+        for (int i =0;i < num;i++){
+            addHexagon(world,x[0],y[0],smallEdge);
+            y[0] = y[0] + smallEdge *2;
+        }
+        y[0] = inity;
+    }
 
 
 
     public static void main(String[] args){
-        int width = 50;
-        int hight = 30;
+        int width = 100;
+        int hight = 50;
         TERenderer ter = new TERenderer();
         ter.initialize(width,hight);
         TETile[][] world = new TETile[width][hight];
@@ -82,7 +118,10 @@ public class HexWorld {
          //
          //
         HexWorld test = new HexWorld();
-        test.addHexagon(world,3,20,7);
+       // test.addHexagon(world,3,20,4);
+        int[] x= new int[]{50};int[] y = new int[]{40};
+        //test.veritc(world,x,y,4,4);
+        test.GenerateLargeHexagon(world,2,5,40,20);
         ter.renderFrame(world);
     }
 }
