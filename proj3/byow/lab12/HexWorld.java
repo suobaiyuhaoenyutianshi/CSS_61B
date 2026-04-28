@@ -9,7 +9,80 @@ import byow.TileEngine.Tileset;
 import java.util.Random;
 
 /**
- * Draws a world consisting of hexagonal regions.
+ *绘制一个由六边形区域组成的世界。
  */
 public class HexWorld {
+
+    //1，addHexagon 小6边形（world(数组)，坐标，边长）
+    //2，randomTile 返回方块，从4种中随机（）
+    //3，GenerateLargeHexagon生成大6边形的（world(数组)，小6边形的边长，坐标，大6边形的边长）
+    //越界出问题，
+    public void addHexagon(TETile[][] world,int x,int y,int edge){
+        TETile tile = randomTile();
+        int i = 0;
+        int row = x;//横坐标
+        int col = y;
+        int length = edge;
+        while(i < edge){
+
+            for(int k = 0;k < length;k++){
+
+                if(row >=0 && row <world.length && col >= 0&& col<world[0].length ){
+                    world[row +k][col] = tile;
+                }
+            }
+            row--;col++;i++;length +=2;
+        }
+        length -=2;row++;
+        i = 0;
+        while(i < edge){
+
+            for(int k = 0;k < length;k++){
+
+                if(row >=0 && row <world.length && col >= 0&& col<world[0].length ){
+                    world[row +k][col] = tile;
+                }
+            }
+            row++;col++;i++;length -= 2;
+        }
+
+    }
+    //2
+    private TETile randomTile(){
+        int randNum = new Random().nextInt(4);
+        switch (randNum){
+            case 0 : return Tileset.FLOWER;
+            case 1:return Tileset.SAND;
+            case 2:return Tileset.GRASS;
+            case 3:return Tileset.WALL;
+            default: return Tileset.NOTHING;
+        }
+    }
+
+
+
+
+
+
+
+
+
+    public static void main(String[] args){
+        int width = 50;
+        int hight = 30;
+        TERenderer ter = new TERenderer();
+        ter.initialize(width,hight);
+        TETile[][] world = new TETile[width][hight];
+        for (int x = 0; x < width; x += 1) {
+            for (int y = 0; y < hight; y += 1) {
+                world[x][y] = Tileset.NOTHING;
+            }
+        }
+        //
+         //
+         //
+        HexWorld test = new HexWorld();
+        test.addHexagon(world,3,20,7);
+        ter.renderFrame(world);
+    }
 }
