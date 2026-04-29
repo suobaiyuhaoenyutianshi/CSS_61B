@@ -87,8 +87,9 @@ public class MemoryGame {
         //待办事项：获取该字符串，并将其显示在屏幕的中心位置
 //待办事项：若游戏尚未结束，则在屏幕顶部显示相关的游戏信息
         StdDraw.clear(Color.BLACK);
-        Font font = new Font("Monaco",Font.BOLD , 30);
-        if(!gameOver) {            // 黑色背景
+        StdDraw.setFont(new Font("Monaco",Font.BOLD , 30));
+        if(!gameOver) {// 黑色背景
+
             switch (new Random().nextInt(2)) {
                 case 0:
                     StdDraw.setPenColor(StdDraw.WHITE);
@@ -98,8 +99,12 @@ public class MemoryGame {
                     break;
             }       // 白色文字
             String k = "round :" + this.round;
+            StdDraw.setFont(new Font("Monaco",Font.BOLD , 40));
             StdDraw.text(width / 2.0 -15 , height/2 + 16,k);
+            Font font = new Font("Monaco",Font.BOLD , 100);
+            StdDraw.setFont(font);
             StdDraw.text(this.width / 2.0, this.height / 2.0, s);
+            StdDraw.setFont(new Font("Monaco",Font.BOLD , 30));
             StdDraw.setPenColor(StdDraw.WHITE);
             StdDraw.rectangle(this.width / 2, this.height / 2 + 1.5, 10, 3.5);
             StdDraw.setPenColor(StdDraw.CYAN);
@@ -111,7 +116,8 @@ public class MemoryGame {
             StdDraw.text(this.width / 2, this.height / 6 - 5, ENCOURAGEMENT[new Random().nextInt(7)]);
             StdDraw.text(this.width / 2 - 16, this.height / 6 + 4, ENCOURAGEMENT[new Random().nextInt(7)]);
             StdDraw.text(this.width / 2 + 15, this.height / 6 - 1, ENCOURAGEMENT[new Random().nextInt(7)]);
-
+            StdDraw.setFont(new Font("Monaco",Font.BOLD , 70));
+            StdDraw.text(this.width / 2 , this.height / 2 + 16, "watch");
         }//  StdDraw.filledRectangle(this.width/2, this.height/2+1.5, 10, 3.5);
 
         StdDraw.setPenColor(Color.WHITE);
@@ -120,10 +126,17 @@ public class MemoryGame {
 
     public void flashSequence(String letters) {
         // 任务说明：将每个字符以字母形式显示出来，同时确保在每个字符之间清空屏幕
+        for(int i = 0;i < letters.length();i++){
+            char c = letters.charAt(i);
+            drawFrame(String.valueOf(c));
+            StdDraw.pause(5000);
+        }
+
     }
 
     public String solicitNCharsInput(int n) {
         // 任务说明：读取玩家输入的 n 个字母
+        StdDraw.pause(5000);
         return null;
     }
 
@@ -131,8 +144,9 @@ public class MemoryGame {
         // 说明：在游戏开始前需设置好所有相关变量
 //待办事项：建立引擎循环
 
-        this.drawFrame("aaaa");
-        StdDraw.pause(5000);
+       // this.drawFrame("aaaa");
+        //StdDraw.pause(5000);
+        this.flashSequence("abcdef");
     }
 
 }
