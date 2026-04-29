@@ -119,9 +119,12 @@ public class MemoryGame {
             StdDraw.setFont(new Font("Monaco",Font.BOLD , 70));
             StdDraw.text(this.width / 2 , this.height / 2 + 16, "watch");
         }//  StdDraw.filledRectangle(this.width/2, this.height/2+1.5, 10, 3.5);
-
-        StdDraw.setPenColor(Color.WHITE);
-        StdDraw.text(width / 2.0, height / 2.0, s);StdDraw.show();
+       StdDraw.setFont( new Font("Monaco",Font.BOLD , 100));
+        StdDraw.setPenColor(Color.red);
+        if(this.gameOver){
+            StdDraw.text(this.width / 2.0, this.height / 2.0, s);
+        }
+       StdDraw.show();
     }
 
     public void flashSequence(String letters) {
@@ -129,24 +132,51 @@ public class MemoryGame {
         for(int i = 0;i < letters.length();i++){
             char c = letters.charAt(i);
             drawFrame(String.valueOf(c));
-            StdDraw.pause(5000);
+            StdDraw.pause(1000);
         }
 
     }
 
     public String solicitNCharsInput(int n) {
         // 任务说明：读取玩家输入的 n 个字母
-        StdDraw.pause(5000);
-        return null;
-    }
+        String Str = "";
+        for(int i = 0;Str.length()< n;i++){
+            StdDraw.pause(100);
+            this.drawFrame(Str);
+            //StdDraw.pause(2000);
+            if(StdDraw.hasNextKeyTyped()){
+                char c = StdDraw.nextKeyTyped();
+                Str = Str+c;
+                this.drawFrame(Str);
 
+            }
+
+        }
+
+        return Str;
+    }
+//注我的种子固定的，除了颜色与鼓励话，其余随机值可回顾
     public void startGame() {
         // 说明：在游戏开始前需设置好所有相关变量
 //待办事项：建立引擎循环
 
        // this.drawFrame("aaaa");
         //StdDraw.pause(5000);
-        this.flashSequence("abcdef");
+        //this.flashSequence("abcdef");
+
+        while(!gameOver){
+            int randNum = round +1;
+            String randStr = this.generateRandomString(randNum);
+            this.flashSequence(randStr);
+
+            String a =  solicitNCharsInput(randNum);
+             if(a.equals(randStr)){
+                 this.round++;
+             }else this.gameOver = true;
+            StdDraw.pause(1000);
+        }
+
+       this.drawFrame("gameOver：" + round);
     }
 
 }
