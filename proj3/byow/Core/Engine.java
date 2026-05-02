@@ -3,7 +3,7 @@ package byow.Core;
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 import edu.princeton.cs.introcs.StdDraw;
-
+import byow.block.*;
 import java.awt.*;
 
 
@@ -18,8 +18,11 @@ public class Engine {
      * 包括来自主菜单的输入。*/
     public void interactWithKeyboard() {
         //菜单N 表示“新世界”，L 表示“加载世界”，Q 表示退出。
-        menu();
-
+        String s = menu();
+       //根据s 处理
+        if(s.equalsIgnoreCase("q")) return;
+        //加载世界
+        loadWorld(s);
     }
 
     private static String  menu(){
@@ -64,17 +67,35 @@ public class Engine {
         } else if (s.equalsIgnoreCase("L") || s.equalsIgnoreCase("Q")) {
             return s;
         }
+        StdDraw.clear();
         return s;
+
+    }
+    public static void loadWorld(String s){
+        if(s.equalsIgnoreCase("l")){
+            //加载之前最后保存的世界；
+            return;
+        }
+        //创建型世界
+        long seed = Long.parseLong(s);
+
     }
 
-    /**只负责渲染，输入数组，渲染，什么颜色，内部逻辑都不归他管
-     * */
     public static  void main(String[] args){
       menu();
     }
+    /**只负责渲染，输入数组，渲染，什么颜色，内部逻辑都不归他管
+     * */
     private void rendergraph(TETile[][] world){
 
     }
+
+
+
+
+
+
+
 
 
     /**
