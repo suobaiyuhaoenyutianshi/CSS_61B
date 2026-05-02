@@ -6,6 +6,8 @@ import byow.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
 import byow.block.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 
@@ -13,9 +15,11 @@ public class Engine {
     TERenderer ter = new TERenderer();
     /* 您可以随意更改宽度和高度。*/
     public static final int WIDTH = 80;
-    public static final int HEIGHT = 30;
+    public static final int HEIGHT = 80;
     public TETile[][] world;
-
+//每个世界房间数量
+    public int roomNum = 7;
+    public int roomsdis = 10;
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
@@ -103,12 +107,21 @@ public class Engine {
     private  block[][] creatWorld(long seed){
         Random rand = new Random(seed);
         block[][] world = new block[this.WIDTH][this.HEIGHT];
+        //每个世界7个房间,半径为15，中心距离差至少10,即100
+
+        List<twoDim> rooms = new ArrayList<>();
+        rooms.add(new twoDim(0,0));
+        while( rooms.size() < this.roomNum +1){
+            int x =rand.nextInt(this.WIDTH);int y = rand.nextInt(this.HEIGHT);
+           if(isConformingDiffer(x,y,rooms)){
+               rooms.add(new twoDim(x,y));
+           }
+        }
+
         //先试试手，创建过个矩形的绿地
         for(int i =0;i<this.WIDTH;i++){
             for (int j = 0;j<this.HEIGHT;j++){
-              if(i<30&&j<30){
-                  world[i][j]= new spaceBlock();
-              }else world[i][j]= new WallBlock();
+
             }
         }
         //渲染
@@ -116,6 +129,30 @@ public class Engine {
         return world;
     }
 
+    /**是否符合相差距离*
+     *
+     */
+    private boolean isConformingDiffer(int x,int y,List<twoDim> rooms){
+
+        List<Integer> dis = new ArrayList<>(); int i=0;
+        while(i < rooms.size()){
+            int disTo = (x-rooms.get(i).x )* (y - rooms.get(i).y);
+            if(disTo < this.roomsdis*roomsdis)return false;
+            i++;
+        }
+        return true;
+    }
+
+
+
+
+    //二维坐标
+    private class twoDim{
+        int x;int y;
+        public twoDim(int x,int y){
+            this.x =x;this.y = y;
+        }
+    }
 
     public static  void main(String[] args){
         Engine test = new Engine();
