@@ -2,9 +2,11 @@ package byow.Core;
 
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
+import byow.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
 import byow.block.*;
 import java.awt.*;
+import java.util.Random;
 
 
 public class Engine {
@@ -12,6 +14,7 @@ public class Engine {
     /* 您可以随意更改宽度和高度。*/
     public static final int WIDTH = 80;
     public static final int HEIGHT = 30;
+    public TETile[][] world;
 
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
@@ -21,7 +24,7 @@ public class Engine {
         String s = menu();
        //根据s 处理
         if(s.equalsIgnoreCase("q")) return;
-        //加载世界
+        //加载世界，自己创建的方块对象
         loadWorld(s);
     }
 
@@ -71,28 +74,53 @@ public class Engine {
         return s;
 
     }
-    public static void loadWorld(String s){
+    /**加载世界，L加载之前创建的，N是新的世界，返回*/
+    public  block[][] loadWorld(String s){
         if(s.equalsIgnoreCase("l")){
             //加载之前最后保存的世界；
-            return;
+            return null;
         }
         //创建型世界
         long seed = Long.parseLong(s);
-
+        return creatWorld(seed);
     }
 
-    public static  void main(String[] args){
-      menu();
-    }
+
     /**只负责渲染，输入数组，渲染，什么颜色，内部逻辑都不归他管
      * */
-    private void rendergraph(TETile[][] world){
-
+    private static void rendergraph(block[][] world){
+        int x = world.length;int y = world[0].length;
+        TETile[][] Tworld = new TETile[x][y];
+        for(int i =0;i<x;i++){
+            for(int j =0;j<y;j++){
+                Tworld[i][j] = world[i][j].blockName;
+            }
+        }
+        TERenderer ter = new TERenderer();
+        ter.initialize(x,y);
+        ter.renderFrame(Tworld);
+    }
+    private  block[][] creatWorld(long seed){
+        Random rand = new Random(seed);
+        block[][] world = new block[this.WIDTH][this.HEIGHT];
+        //先试试手，创建过个矩形的绿地
+        for(int i =0;i<this.WIDTH;i++){
+            for (int j = 0;j<this.HEIGHT;j++){
+              if(i<30&&j<30){
+                  world[i][j]= new spaceBlock();
+              }else world[i][j]= new WallBlock();
+            }
+        }
+        //渲染
+        rendergraph(world);
+        return world;
     }
 
 
-
-
+    public static  void main(String[] args){
+        Engine test = new Engine();
+        test.interactWithKeyboard();
+    }
 
 
 
