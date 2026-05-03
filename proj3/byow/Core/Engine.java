@@ -8,6 +8,7 @@ import byow.block.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 
@@ -18,8 +19,10 @@ public class Engine {
     public static final int HEIGHT = 80;
     public TETile[][] world;
 //每个世界房间数量
-    public int roomNum = 7;
-    public int roomsdis = 10;
+    private final int MaxROOMS= 20;
+    private final int MINROOMS = 8;
+    public int roomNum;
+    public int roomsdis = 16;
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
@@ -31,8 +34,10 @@ public class Engine {
         //加载世界，自己创建的方块对象
        block[][] Blockworld= loadWorld(s);
         //渲染
-        while(true){
+
             rendergraph(Blockworld);
+        while (true) {
+            StdDraw.pause(1000);       // 保持窗口不关闭，不重复渲染
         }
 
     }
@@ -89,9 +94,13 @@ public class Engine {
             //加载之前最后保存的世界；
             return null;
         }
+
         //创建型世界
         long seed = Long.parseLong(s);
-        return creatWorld(seed);
+        Random rand = new Random(seed);
+        //房间数量,后面不可实现时他会修改
+        this.roomNum = rand.nextInt(MaxROOMS - MINROOMS) + MINROOMS;
+        return creatWorld(seed,rand);
     }
 
 
@@ -109,29 +118,30 @@ public class Engine {
         ter.initialize(x,y);
         ter.renderFrame(Tworld);
     }
-    private  block[][] creatWorld(long seed){
-        Random rand = new Random(seed);
+    private  block[][] creatWorld(long seed,Random rand){
         block[][] world = new block[this.WIDTH][this.HEIGHT];
         //初始
         initWorld(world);
         //每个世界7个房间,半径为15，中心距离差至少10,即100
 
         List<twoDim> rooms = new ArrayList<>();
-        rooms.add(new twoDim(0,0));
-        while( rooms.size() < this.roomNum +1){
+        rooms.add(new twoDim(rand.nextInt(this.WIDTH),rand.nextInt( this.HEIGHT)));
+        int times =0;
+        while( rooms.size() < this.roomNum){
             int x =rand.nextInt(this.WIDTH);int y = rand.nextInt(this.HEIGHT);
            if(isConformingDiffer(x,y,rooms)){
+               if(times > 10000)break;
                rooms.add(new twoDim(x,y));
+               times++;
            }
         }
 
         //先试试手
-        for(int i =1;i<this.roomNum +1;i++){
+        for(int i =0;i<this.roomNum ;i++){
            //创建房间
             creatRoom(rooms.get(i),world,rand ,i);
         }
-        //渲染
-            rendergraph(world);
+
 
 
         return world;
@@ -154,7 +164,10 @@ public class Engine {
      *
      */
     private boolean isConformingDiffer(int x,int y,List<twoDim> rooms){
-
+        //中心距离边界距离，为1/3 dis
+        boolean boundaryX = (x - 0)>this.roomsdis/3 &&(this.WIDTH -x)>this.roomsdis/3;
+        boolean boundaryY = (y - 0)>this.roomsdis/3 && (this.HEIGHT -y)>this.roomsdis/3;
+        if(!boundaryX||!boundaryY) return false;
         List<Integer> dis = new ArrayList<>(); int i=0;
         while(i < rooms.size()){
             int disTo = (x-rooms.get(i).x )*(x-rooms.get(i).x) +(y - rooms.get(i).y)*(y - rooms.get(i).y);
@@ -181,7 +194,9 @@ public class Engine {
         int xLast = x + this.roomsdis;int yLast = y+ this.roomsdis;
         for(int i= towDim.y-this.roomsdis/2;i<yLast;i++){
             for (int j=towDim.x-this.roomsdis/2;j<xLast;j++){
-                if(i<0||i>=this.HEIGHT||j<0||j>=this.WIDTH) continue;
+                if(i<0||i>=this.HEIGHT||j<0||j>=this.WIDTH){
+                    continue;
+                }
                 if(i==yLast-1||i== y||j==x||j==xLast-1){
                     boolean[] isWallorflower= new boolean[]{true,true,true,true,true,true,true,false};
                     if(isWallorflower[rand.nextInt(isWallorflower.length)]){
@@ -190,7 +205,15 @@ public class Engine {
                     }else world[j][i]= new flowerBlock();
 
                 }
-                else world[j][i] = new spaceBlock();
+                else {
+                    if(i ==0 || i==this.HEIGHT -1||j ==0||j==this.WIDTH-1){
+                        world[j][i]= new WallBlock();
+                        continue;
+                    }
+                    world[j][i] = new spaceBlock();
+                }
+
+
             }
         }
 
