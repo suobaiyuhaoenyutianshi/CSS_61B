@@ -29,7 +29,12 @@ public class Engine {
        //根据s 处理
         if(s.equalsIgnoreCase("q")) return;
         //加载世界，自己创建的方块对象
-        loadWorld(s);
+       block[][] Blockworld= loadWorld(s);
+        //渲染
+        while(true){
+            rendergraph(Blockworld);
+        }
+
     }
 
     private static String  menu(){
@@ -107,6 +112,8 @@ public class Engine {
     private  block[][] creatWorld(long seed){
         Random rand = new Random(seed);
         block[][] world = new block[this.WIDTH][this.HEIGHT];
+        //初始
+        initWorld(world);
         //每个世界7个房间,半径为15，中心距离差至少10,即100
 
         List<twoDim> rooms = new ArrayList<>();
@@ -118,16 +125,30 @@ public class Engine {
            }
         }
 
-        //先试试手，创建过个矩形的绿地
-        for(int i =0;i<this.WIDTH;i++){
-            for (int j = 0;j<this.HEIGHT;j++){
-
-            }
+        //先试试手
+        for(int i =1;i<this.roomNum +1;i++){
+           //创建房间
+            creatRoom(rooms.get(i),world,rand ,i);
         }
         //渲染
-        rendergraph(world);
+            rendergraph(world);
+
+
         return world;
     }
+
+
+
+/**初始世界*/
+    private void initWorld(block[][]world){
+        for(int y =0;y<this.HEIGHT;y++){
+            for (int x=0;x<this.WIDTH;x++){
+                world[x][y]= new voidBlock();
+            }
+        }
+    }
+
+
 
     /**是否符合相差距离*
      *
@@ -136,7 +157,7 @@ public class Engine {
 
         List<Integer> dis = new ArrayList<>(); int i=0;
         while(i < rooms.size()){
-            int disTo = (x-rooms.get(i).x )* (y - rooms.get(i).y);
+            int disTo = (x-rooms.get(i).x )*(x-rooms.get(i).x) +(y - rooms.get(i).y)*(y - rooms.get(i).y);
             if(disTo < this.roomsdis*roomsdis)return false;
             i++;
         }
@@ -153,7 +174,31 @@ public class Engine {
             this.x =x;this.y = y;
         }
     }
+/**创建房间
+ * */
+    private void creatRoom(twoDim towDim,block[][] world,Random rand,int sigalRoom){
+        int x = towDim.x-this.roomsdis/2;int y = towDim.y-this.roomsdis/2;
+        int xLast = x + this.roomsdis;int yLast = y+ this.roomsdis;
+        for(int i= towDim.y-this.roomsdis/2;i<yLast;i++){
+            for (int j=towDim.x-this.roomsdis/2;j<xLast;j++){
+                if(i<0||i>=this.HEIGHT||j<0||j>=this.WIDTH) continue;
+                if(i==yLast-1||i== y||j==x||j==xLast-1){
+                    boolean[] isWallorflower= new boolean[]{true,true,true,true,true,true,true,false};
+                    if(isWallorflower[rand.nextInt(isWallorflower.length)]){
+                        world[j][i]= new WallBlock();
+                        world[j][i].room = sigalRoom;
+                    }else world[j][i]= new flowerBlock();
 
+                }
+                else world[j][i] = new spaceBlock();
+            }
+        }
+
+
+
+
+
+    }
     public static  void main(String[] args){
         Engine test = new Engine();
         test.interactWithKeyboard();
