@@ -16,17 +16,19 @@ public class Engine {
     TERenderer ter = new TERenderer();
     /* 您可以随意更改宽度和高度。*/
     public static final int WIDTH = 80;
-    public static final int HEIGHT = 80;
+    public static final int HEIGHT = 40;
     public TETile[][] world;
 //每个世界房间数量
     private final int MaxROOMS= 20;
     private final int MINROOMS = 8;
     public int roomNum;
-    public int roomsdis = 16;
+    public int roomsdis = 15;
+
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
     public void interactWithKeyboard() {
+
         //菜单N 表示“新世界”，L 表示“加载世界”，Q 表示退出。
         String s = menu();
        //根据s 处理
@@ -106,17 +108,16 @@ public class Engine {
 
     /**只负责渲染，输入数组，渲染，什么颜色，内部逻辑都不归他管
      * */
-    private static void rendergraph(block[][] world){
-        int x = world.length;int y = world[0].length;
+    private  void rendergraph(block[][] world){
+        int x = this.WIDTH;int y = this.HEIGHT;
         TETile[][] Tworld = new TETile[x][y];
         for(int i =0;i<x;i++){
             for(int j =0;j<y;j++){
                 Tworld[i][j] = world[i][j].blockName;
             }
         }
-        TERenderer ter = new TERenderer();
-        ter.initialize(x,y);
-        ter.renderFrame(Tworld);
+        ter.initialize(this.WIDTH,this.HEIGHT);
+        this.ter.renderFrame(Tworld);
     }
     private  block[][] creatWorld(long seed,Random rand){
         block[][] world = new block[this.WIDTH][this.HEIGHT];
@@ -125,17 +126,22 @@ public class Engine {
         //每个世界7个房间,半径为15，中心距离差至少10,即100
 
         List<twoDim> rooms = new ArrayList<>();
-        rooms.add(new twoDim(rand.nextInt(this.WIDTH),rand.nextInt( this.HEIGHT)));
+       // rooms.add(new twoDim(rand.nextInt(this.WIDTH),rand.nextInt( this.HEIGHT)));
         int times =0;
-        while( rooms.size() < this.roomNum){
+        while( rooms.size() < this.roomNum&&times < 10000){
             int x =rand.nextInt(this.WIDTH);int y = rand.nextInt(this.HEIGHT);
            if(isConformingDiffer(x,y,rooms)){
-               if(times > 10000)break;
-               rooms.add(new twoDim(x,y));
-               times++;
-           }
-        }
 
+
+               rooms.add(new twoDim(x,y));
+
+           }
+            times++;
+
+        }
+        if (rooms.size() < this.roomNum) {
+            this.roomNum = rooms.size(); // 无法生成足够房间，调整实际房间数
+        }
         //先试试手
         for(int i =0;i<this.roomNum ;i++){
            //创建房间
@@ -165,8 +171,8 @@ public class Engine {
      */
     private boolean isConformingDiffer(int x,int y,List<twoDim> rooms){
         //中心距离边界距离，为1/3 dis
-        boolean boundaryX = (x - 0)>this.roomsdis/3 &&(this.WIDTH -x)>this.roomsdis/3;
-        boolean boundaryY = (y - 0)>this.roomsdis/3 && (this.HEIGHT -y)>this.roomsdis/3;
+        boolean boundaryX = (x - 0)>=this.roomsdis/2 &&(this.WIDTH-1 -x)>this.roomsdis/2;
+        boolean boundaryY = (y - 0)>=this.roomsdis/2 && (this.HEIGHT-1 -y)>this.roomsdis/2;
         if(!boundaryX||!boundaryY) return false;
         List<Integer> dis = new ArrayList<>(); int i=0;
         while(i < rooms.size()){
@@ -189,39 +195,26 @@ public class Engine {
     }
 /**创建房间
  * */
-    private void creatRoom(twoDim towDim,block[][] world,Random rand,int sigalRoom){
-        int x = towDim.x-this.roomsdis/2;int y = towDim.y-this.roomsdis/2;
-        int xLast = x + this.roomsdis;int yLast = y+ this.roomsdis;
-        for(int i= towDim.y-this.roomsdis/2;i<yLast;i++){
-            for (int j=towDim.x-this.roomsdis/2;j<xLast;j++){
-                if(i<0||i>=this.HEIGHT||j<0||j>=this.WIDTH){
-                    continue;
+private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoom) {
+    int x = towDim.x - this.roomsdis / 2;
+    int y = towDim.y - this.roomsdis / 2;
+    int xLast = x + this.roomsdis;
+    int yLast = y + this.roomsdis;
+    for (int i = y; i < yLast; i++) {
+        for (int j = x; j < xLast; j++) {
+            world[j][i] = new spaceBlock();
+            if (i == y || i == yLast - 1 || j == x || j == xLast - 1) {
+                boolean isWall = rand.nextInt(8) != 0; // 7/8 概率是墙
+                if (isWall) {
+                    world[j][i] = new WallBlock();
+                    world[j][i].room = sigalRoom;
+                } else {
+                    world[j][i] = new flowerBlock();
                 }
-                if(i==yLast-1||i== y||j==x||j==xLast-1){
-                    boolean[] isWallorflower= new boolean[]{true,true,true,true,true,true,true,false};
-                    if(isWallorflower[rand.nextInt(isWallorflower.length)]){
-                        world[j][i]= new WallBlock();
-                        world[j][i].room = sigalRoom;
-                    }else world[j][i]= new flowerBlock();
-
-                }
-                else {
-                    if(i ==0 || i==this.HEIGHT -1||j ==0||j==this.WIDTH-1){
-                        world[j][i]= new WallBlock();
-                        continue;
-                    }
-                    world[j][i] = new spaceBlock();
-                }
-
-
             }
         }
-
-
-
-
-
     }
+}
     public static  void main(String[] args){
         Engine test = new Engine();
         test.interactWithKeyboard();
