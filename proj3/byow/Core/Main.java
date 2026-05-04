@@ -1,9 +1,6 @@
 package byow.Core;
 
-/** This is the main entry point for the program. This class simply parses
- *  the command line inputs, and lets the byow.Core.Engine class take over
- *  in either keyboard or input string mode.
- */
+/** 这是程序的主要入口点。此类仅解析命令行输入，并让 byow.Core.Engine 类在键盘模式或输入字符串模式下接管。*/
 public class Main {
     public static void main(String[] args) {
         if (args.length > 2) {
@@ -11,11 +8,12 @@ public class Main {
             System.exit(0);
         } else if (args.length == 2 && args[0].equals("-s")) {
             Engine engine = new Engine();
-            engine.interactWithInputString(args[1]);
+            engine.interactWithKeyboard();
+            //engine.interactWithInputString(args[1]);
             System.out.println(engine.toString());
-        // DO NOT CHANGE THESE LINES YET ;)
-        } else if (args.length == 2 && args[0].equals("-p")) { System.out.println("Coming soon."); } 
-        // DO NOT CHANGE THESE LINES YET ;)
+            // 请勿更改这些行，先别动哈 ;)
+        } else if (args.length == 2 && args[0].equals("-p")) { System.out.println("Coming soon."); }
+        // 请勿更改这些行，先别动哈 ；)
         else {
             Engine engine = new Engine();
             engine.interactWithKeyboard();

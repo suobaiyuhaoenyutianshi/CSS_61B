@@ -20,6 +20,9 @@ public class block {
     public TETile blockName;
     //通行，true可通行
     public boolean through;
+    //坐标
+    public int x;
+    public int y;
     public void hurt(int x){
         if(x<=0) return;//这样不会使门变为为0时变为空地
         if((blood - x) <= 0){

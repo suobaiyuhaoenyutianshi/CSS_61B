@@ -150,7 +150,7 @@ public class MemoryGame {
                 this.drawFrame(Str);
 
             }
-
+            StdDraw.pause(100);
         }
 
         return Str;

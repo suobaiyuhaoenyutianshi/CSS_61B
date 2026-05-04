@@ -7,7 +7,7 @@ import byow.TileEngine.Tileset;
 import java.util.Random;
 
 /**
- * Draws a world that contains RANDOM tiles.
+ * 绘制一个包含随机方块的世界。
  */
 public class RandomWorldDemo {
     private static final int WIDTH = 50;
@@ -17,7 +17,7 @@ public class RandomWorldDemo {
     private static final Random RANDOM = new Random(SEED);
 
     /**
-     * Fills the given 2D array of tiles with RANDOM tiles.
+     * 将给定的二维瓷砖数组填充为随机类型的瓷砖
      * @param tiles
      */
     public static void fillWithRandomTiles(TETile[][] tiles) {
@@ -30,10 +30,7 @@ public class RandomWorldDemo {
         }
     }
 
-    /** Picks a RANDOM tile with a 33% change of being
-     *  a wall, 33% chance of being a flower, and 33%
-     *  chance of being empty space.
-     */
+    /** 从所有可用的方块中随机选取一块，其成为墙壁的概率为 33%，成为花朵的概率也为 33%，而成为空地的概率同样为 33%。*/
     private static TETile randomTile() {
         int tileNum = RANDOM.nextInt(3);
         switch (tileNum) {

@@ -63,7 +63,7 @@ public class HexWorld {
 
 //大的y的单位是小6边形
     public void GenerateLargeHexagon(TETile[][] world,int smallEdge,int bigEdge,int x,int y){
-        int[] row = new int[]{x + smallEdge + ((smallEdge - 1)*2 + smallEdge)};
+        int[] row = new int[]{x +(smallEdge *(bigEdge -1)) +(smallEdge-1)*(bigEdge-1)};
         int[] col = new int[]{ y - smallEdge*(bigEdge -1)};
         int num = bigEdge;
        for(int i =0;i < bigEdge;i++){
@@ -76,8 +76,8 @@ public class HexWorld {
 
         }
       //big -1
-        row[0] = x - smallEdge*bigEdge;
-        col[0]=y - smallEdge*2;
+        row[0] = x - (smallEdge *(bigEdge-1) ) -(smallEdge-1)*(bigEdge-1);
+        col[0]=y - smallEdge*(bigEdge -1);
         num = bigEdge;
         for(int i =0;i < bigEdge-1;i++){
             veritc(world,row,col,smallEdge,num);
@@ -121,7 +121,7 @@ public class HexWorld {
        // test.addHexagon(world,3,20,4);
         int[] x= new int[]{50};int[] y = new int[]{40};
         //test.veritc(world,x,y,4,4);
-        test.GenerateLargeHexagon(world,2,5,40,20);
+        test.GenerateLargeHexagon(world,4,3,40,20);
         ter.renderFrame(world);
     }
 }

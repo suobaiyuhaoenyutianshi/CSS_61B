@@ -213,14 +213,14 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
     int yLast = y + this.roomsdis;
     for (int i = y; i < yLast; i++) {
         for (int j = x; j < xLast; j++) {
-            world[j][i] = new spaceBlock();
+            world[j][i] = new spaceBlock(sigalRoom);
             if (i == y || i == yLast - 1 || j == x || j == xLast - 1) {
                 boolean isWall = rand.nextInt(8) != 0; // 7/8 概率是墙
                 if (isWall) {
-                    world[j][i] = new WallBlock();
+                    world[j][i] = new WallBlock(sigalRoom);
                     world[j][i].room = sigalRoom;
                 } else {
-                    world[j][i] = new flowerBlock();
+                    world[j][i] = new flowerBlock(sigalRoom);
                 }
             }
         }
