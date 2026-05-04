@@ -3,7 +3,7 @@ package byow.block;
 import byow.TileEngine.Tileset;
 
 public class voidBlock extends block{
-    public voidBlock(){
+    public voidBlock(int x,int y){
         super();
         this.blockName = Tileset.NOTHING;
         this.through = false;
@@ -11,5 +11,7 @@ public class voidBlock extends block{
         this.room =-1;
         this.price = 1;
         this.isanopenspace =true;
+        this.x = x;
+        this.y =y;
     }
 }

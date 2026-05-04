@@ -170,7 +170,7 @@ public class Engine {
     private void initWorld(block[][]world){
         for(int y =0;y<this.HEIGHT;y++){
             for (int x=0;x<this.WIDTH;x++){
-                world[x][y]= new voidBlock();
+                world[x][y]= new voidBlock(x,y);
             }
         }
     }
@@ -213,14 +213,14 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
     int yLast = y + this.roomsdis;
     for (int i = y; i < yLast; i++) {
         for (int j = x; j < xLast; j++) {
-            world[j][i] = new spaceBlock(sigalRoom);
+            world[j][i] = new spaceBlock(sigalRoom,j,i);
             if (i == y || i == yLast - 1 || j == x || j == xLast - 1) {
                 boolean isWall = rand.nextInt(8) != 0; // 7/8 概率是墙
                 if (isWall) {
-                    world[j][i] = new WallBlock(sigalRoom);
+                    world[j][i] = new WallBlock(sigalRoom,j,i);
                     world[j][i].room = sigalRoom;
                 } else {
-                    world[j][i] = new flowerBlock(sigalRoom);
+                    world[j][i] = new flowerBlock(sigalRoom,j,i);
                 }
             }
         }
@@ -256,10 +256,20 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
 
 
     }
-/**路的生成，依靠房间序号-1，最后，不行我还要再写一种阻塞方块，为-2，围墙只能作为边界，他只后不能添加，之后添加阻塞方块来干扰路线，但若遇上房间为双方的变为门，所以只有房间号-1会变为空地
+
+/**路的生成，依靠房间序号-1，最后，不行我还要再写一种阻塞方块，为-2，围墙只能作为边界，他只后不能添加，之后添加阻塞方块来干扰路线，但若遇上房间为q墙的变为门，
+ * 房间为负数的才可覆盖，为什么是负数而不是-1，因为我之后要加阻塞方快：不可通行，为-2，prince为3，避免无路可走,注：我没有为chen
+ * 注意我只允许墙可变为门！！！！！！！！！
  * */
     private void thoughTwoRoom(block[][] blocks,ROOM T,ROOM V){
-
+        DimDijkstraSP path =new DimDijkstraSP(blocks,T.XLoc,T.Yloc, V.XLoc, V.Yloc,T.roomNum,V.roomNum);
+        for(int[]coordinates:path.pathTo()){
+            //先全部变为空地试试
+            int x =coordinates[0];int y =coordinates[1];
+            //房间序号
+            int room = blocks[x][y].room;
+            blocks[x][y] = new spaceBlock(room,x,y);
+        }
     }
 
 

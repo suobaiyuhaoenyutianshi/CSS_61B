@@ -6,7 +6,7 @@ import byow.TileEngine.Tileset;
 import java.util.Random;
 
 public class spaceBlock extends block{
-    public spaceBlock(int room){
+    public spaceBlock(int room,int x,int y){
         super();
         this.blood= 0;
         this.through = true;
@@ -16,5 +16,7 @@ public class spaceBlock extends block{
         this.price = 2;
         this.isanopenspace = true;
         this.room = room;
+        this.x = x;
+        this.y =y;
     }
 }
