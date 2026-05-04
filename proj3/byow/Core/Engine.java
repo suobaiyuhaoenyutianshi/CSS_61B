@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
+import byow.graph.*;
 
 public class Engine {
     TERenderer ter = new TERenderer();
@@ -23,24 +23,34 @@ public class Engine {
     private final int MINROOMS = 8;
     public int roomNum;
     public int roomsdis = 15;
+    private int area = roomsdis*roomsdis;
+    //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
+    private List<ROOM> ROOMS;
 
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
     public void interactWithKeyboard() {
-
+        //房间
+        ROOMS = new ArrayList<>();
         //菜单N 表示“新世界”，L 表示“加载世界”，Q 表示退出。
         String s = menu();
        //根据s 处理
         if(s.equalsIgnoreCase("q")) return;
         //加载世界，自己创建的方块对象
        block[][] Blockworld= loadWorld(s);
+       //最小图
+        if (!s.equalsIgnoreCase("n")) {
+            minGrap(Blockworld,this.ROOMS);
+        }
+
         //渲染
 
             rendergraph(Blockworld);
         while (true) {
             StdDraw.pause(1000);       // 保持窗口不关闭，不重复渲染
         }
+
 
     }
 
@@ -123,18 +133,19 @@ public class Engine {
         block[][] world = new block[this.WIDTH][this.HEIGHT];
         //初始
         initWorld(world);
-        //每个世界7个房间,半径为15，中心距离差至少10,即100
+
 
         List<twoDim> rooms = new ArrayList<>();
        // rooms.add(new twoDim(rand.nextInt(this.WIDTH),rand.nextInt( this.HEIGHT)));
-        int times =0;
-        while( rooms.size() < this.roomNum&&times < 10000){
+        int times =0;int idx =0;
+        while( rooms.size() < this.roomNum&&times < 10000 && this.area*(idx+1)< (this.WIDTH*this.HEIGHT)/3*2){
             int x =rand.nextInt(this.WIDTH);int y = rand.nextInt(this.HEIGHT);
            if(isConformingDiffer(x,y,rooms)){
 
 
                rooms.add(new twoDim(x,y));
-
+                ROOMS.add(new ROOM(idx,x,y,this.area));
+                idx++;
            }
             times++;
 
@@ -177,7 +188,7 @@ public class Engine {
         List<Integer> dis = new ArrayList<>(); int i=0;
         while(i < rooms.size()){
             int disTo = (x-rooms.get(i).x )*(x-rooms.get(i).x) +(y - rooms.get(i).y)*(y - rooms.get(i).y);
-            if(disTo < this.roomsdis*roomsdis)return false;
+            if(disTo -(this.roomsdis)*(this.roomsdis/3) < this.roomsdis*roomsdis)return false;
             i++;
         }
         return true;
@@ -221,7 +232,35 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
     }
 
 
+    /**最小树，联通房间的顺序依靠，依靠某种方式返回Iterable<IEdge<T>> edges()，在依靠，创建个Map或直接数组序号也罢，都可以*/
+    public void minGrap(block[][] blocks,List<ROOM> ROOMS){
+        EdgeWeightedGraph<ROOM> graph = new EdgeWeightedGraph<>(ROOMS.size());
+        for(int i =0;i< ROOMS.size();i++){
+            //加除了自己的对象
+            for(int j =0;j<ROOMS.size();j++){
+                if(j==i)continue;
+                //距离
+                ROOM T =ROOMS.get(i);ROOM V = ROOMS.get(j);
+                double weight = (T.XLoc -V.XLoc)*(T.XLoc -V.XLoc) + (T.Yloc - V.Yloc)*(T.Yloc - V.Yloc);
+                graph.addEdge(new UndirectedEdge<>(T, V,weight));
+            }
+        }
+        //ok,照着这个修改blocks,先写个简单的直线
+        KruskalMST<ROOM> minTree = new KruskalMST<>(graph);
+        for (IEdge<ROOM> edge : minTree.edges()) {
+            ROOM T = edge.either();
+            ROOM V = edge.other(T);
+            thoughTwoRoom(blocks, T, V); // 挖掘从 T 到 V 的lu
+        }
 
+
+
+    }
+/**路的生成，依靠房间序号-1，最后，不行我还要再写一种阻塞方块，为-2，围墙只能作为边界，他只后不能添加，之后添加阻塞方块来干扰路线，但若遇上房间为双方的变为门，所以只有房间号-1会变为空地
+ * */
+    private void thoughTwoRoom(block[][] blocks,ROOM T,ROOM V){
+
+    }
 
 
     /**
