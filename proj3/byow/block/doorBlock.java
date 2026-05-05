@@ -12,6 +12,7 @@ public class doorBlock extends block {
         this.room =-1;
         this.x = x;
         this.y =y;
+        this.Name = "Door";
     }
 
 

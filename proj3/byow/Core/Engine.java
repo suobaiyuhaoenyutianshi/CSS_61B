@@ -22,7 +22,7 @@ public class Engine {
     private final int MaxROOMS= 20;
     private final int MINROOMS = 8;
     public int roomNum;
-    public int roomsdis = 15;
+    public int roomsdis = 5;
     private int area = roomsdis*roomsdis;
     //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
     private List<ROOM> ROOMS;
@@ -138,7 +138,7 @@ public class Engine {
         List<twoDim> rooms = new ArrayList<>();
        // rooms.add(new twoDim(rand.nextInt(this.WIDTH),rand.nextInt( this.HEIGHT)));
         int times =0;int idx =0;
-        while( rooms.size() < this.roomNum&&times < 10000 && this.area*(idx+1)< (this.WIDTH*this.HEIGHT)/3*2){
+        while( rooms.size() < this.roomNum&&times < 10000){
             int x =rand.nextInt(this.WIDTH);int y = rand.nextInt(this.HEIGHT);
            if(isConformingDiffer(x,y,rooms)){
 

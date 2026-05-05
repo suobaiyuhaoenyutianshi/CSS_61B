@@ -11,15 +11,28 @@ import java.util.*;
 import byow.block.*;
 import java.util.*;
 
+import byow.block.*;
+
+import java.util.*;
+
+/**输入: block[][] world, int startX, int startY, int targetX, int targetY
+ 输出: List<int[]> 路径坐标列表（从起点到终点，每一步的 (x, y)
+ // 通行规则：要么是可变为空地，要么是可变门的墙，这里返回的不过是List<int[]> 路径,之后还要在engine还有他写规则,这个规则是指以这个路线为核心扩张，，堵塞方块添加必定在最短路径之前
+ 房间为负数的才可覆盖，为什么是负数而不是-1，因为我之后要加阻塞方快：不可通行，为-2，prince为3，避免无路可走         </>*/
+
+import byow.block.*;
+import java.util.*;
+
 public class DimDijkstraSP {
     private int[][] disTo;
-    private int[][][] edgeTo;
+    private int[][][] edgeTo;//注释：例[2][3][0] = 1  [2][3][0] = 2即（2，3）-》（1，2）
     private PriorityQueue<Node> pq;
     private final int WIDTH, HEIGHT;
     private boolean findREsult;
     int startX, startY, targetX, targetY;
     int startIdx, targetIdx;
 
+    //房间序号
     public DimDijkstraSP(block[][] blocks, int startX, int startY, int targetX, int targetY,
                          int startIdx, int targetIdx) {
         this.startX = startX;
@@ -34,7 +47,7 @@ public class DimDijkstraSP {
         this.edgeTo = new int[WIDTH][HEIGHT][2];
         for (int[] row : disTo) Arrays.fill(row, Integer.MAX_VALUE);
 
-        boolean[][] closed = new boolean[WIDTH][HEIGHT];
+       // boolean[][] closed = new boolean[WIDTH][HEIGHT];// 关闭列表
         pq = new PriorityQueue<>(Comparator.comparingDouble(v -> v.f));
 
         disTo[startX][startY] = 0;
@@ -46,9 +59,9 @@ public class DimDijkstraSP {
         while (!pq.isEmpty()) {
             Node cur = pq.poll();
             int cx = cur.x, cy = cur.y;
-            if (closed[cx][cy]) continue;
+          //  if (closed[cx][cy]) continue;
             if (cur.dist > disTo[cx][cy]) continue;   // 惰性删除
-            closed[cx][cy] = true;                    // 移入关闭列表
+            //closed[cx][cy] = true;  // 锁定节点                   //   // 已关闭的跳过 移入关闭列表
 
             if (cx == targetX && cy == targetY) {
                 findREsult = true;
@@ -58,18 +71,18 @@ public class DimDijkstraSP {
             for (int[] d : dirs) {
                 int nx = cx + d[0], ny = cy + d[1];
                 if (nx < 0 || nx >= WIDTH || ny < 0 || ny >= HEIGHT) continue;
-                if (closed[nx][ny]) continue;         // 已关闭，不再松弛
+               // if (closed[nx][ny]) continue;         // 已关闭，不再松弛
 
                 block nb = blocks[nx][ny];
-                // 房间检查
+                // 房间检查   不允许闯入其他房间,
                 if (!(nb.room == startIdx || nb.room == targetIdx || nb.room < 0)) continue;
-                // 通行检查
+                // 通行检查，通行规则：要么是可变为空地，要么是可变门的墙且为它的房间将序号为目标两地的其中一个，我的设计例只允许墙变为门
                 boolean passable = (nb.BecameDoor && (nb.room == startIdx || nb.room == targetIdx))
                         || nb.isanopenspace;
                 if (!passable) continue;
 
                 int newG = disTo[cx][cy] + nb.price;
-                if (newG < disTo[nx][ny]) {           // 仅严格小才更新，杜绝等代价交换
+                if (newG < disTo[nx][ny]) {           // 只接受严格更优的路径，避免等代价交换导致环仅严格小才更新，杜绝等代价交换
                     disTo[nx][ny] = newG;
                     edgeTo[nx][ny][0] = cx;
                     edgeTo[nx][ny][1] = cy;
@@ -85,7 +98,7 @@ public class DimDijkstraSP {
         // 欧几里得距离作为启发式
         return (int) Math.sqrt((x - targetX) * (x - targetX) + (y - targetY) * (y - targetY));
     }
-
+    //返回列表坐标
     public Iterable<int[]> pathTo() {
         if (!findREsult) return null;
         List<int[]> path = new ArrayList<>();
@@ -111,3 +124,7 @@ public class DimDijkstraSP {
         }
     }
 }
+/**输入: block[][] world, int startX, int startY, int targetX, int targetY
+ 输出: List<int[]> 路径坐标列表（从起点到终点，每一步的 (x, y)
+ // 通行规则：要么是可变为空地，要么是可变门的墙，这里返回的不过是List<int[]> 路径,之后还要在engine还有他写规则,这个规则是指以这个路线为核心扩张，，堵塞方块添加必定在最短路径之前
+ 房间为负数的才可覆盖，为什么是负数而不是-1，因为我之后要加阻塞方快：不可通行，为-2，prince为3，避免无路可走         </>*/

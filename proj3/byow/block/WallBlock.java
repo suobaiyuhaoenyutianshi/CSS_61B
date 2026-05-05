@@ -13,6 +13,7 @@ public class WallBlock extends block {
         this.BecameDoor=true;
         this.room =room;
         this.x = x;
-        this.y =y;;
+        this.y =y;
+        this.Name = "Wall";
     }
 }

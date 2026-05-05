@@ -10,6 +10,7 @@ import java.util.Random;
 public class block {
         //血量，名字
         //
+    public String Name;
      //是否可变为空地
     public boolean isanopenspace;
     //是否可以变为门

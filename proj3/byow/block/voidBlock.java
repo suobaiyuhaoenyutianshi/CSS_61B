@@ -13,5 +13,6 @@ public class voidBlock extends block{
         this.isanopenspace =true;
         this.x = x;
         this.y =y;
+        this.Name ="void";
     }
 }

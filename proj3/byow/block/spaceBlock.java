@@ -13,10 +13,11 @@ public class spaceBlock extends block{
         //空地
         TETile[] spaceArea= new TETile[]{Tileset.GRASS,Tileset.FLOOR};
         this.blockName = spaceArea[new Random().nextInt(2)];
-        this.price = 2;
+        this.price = 1;
         this.isanopenspace = true;
         this.room = room;
         this.x = x;
         this.y =y;
+        this.Name = "SPACEBlock";
     }
 }
