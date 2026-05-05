@@ -33,6 +33,7 @@ public class DimDijkstraSP {
         this.HEIGHT = blocks[0].length;    // 40
         this.disTo = new int[WIDTH][HEIGHT];
         this.edgeTo = new int[WIDTH][HEIGHT][2];
+        boolean[][] closed = new boolean[WIDTH][HEIGHT];
         for (int i = 0; i < disTo.length; i++) {
             Arrays.fill(disTo[i], Integer.MAX_VALUE);
         }
@@ -43,6 +44,9 @@ public class DimDijkstraSP {
             Node T = pq.poll();
             int currTX = T.x;
             int currTy = T.y;
+            if (closed[currTX][currTy]) continue;
+            if (T.dist > disTo[currTX][currTy]) continue;
+            closed[currTX][currTy] = true;
             //惰性删除
             if (T.dist > disTo[currTX][currTy]) continue;
             if ( currTX == targetX && currTy == targetY) {
@@ -55,6 +59,8 @@ public class DimDijkstraSP {
                 int directX = currTX + directDiam[0];//
                 int directY = currTy + directDiam[1];
                 if (directX < 0 || directX >= this.WIDTH || directY < 0 || directY >= this.HEIGHT) continue;
+                if (closed[directX][directY]) continue;   // 每个节点最多被“打开”一次、松弛邻居一次，一旦它被弹出，它的 edgeTo 就被永久冻结
+
 
                 block newDirectBlock = blocks[directX][directY];
                 //不允许闯入其他房间,

@@ -9,7 +9,7 @@ public class voidBlock extends block{
         this.through = false;
         this.blood = Integer.MAX_VALUE;
         this.room =-1;
-        this.price = 1;
+        this.price = 2;
         this.isanopenspace =true;
         this.x = x;
         this.y =y;
