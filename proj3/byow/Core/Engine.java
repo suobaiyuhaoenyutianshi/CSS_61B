@@ -21,13 +21,15 @@ public class Engine {
 //每个世界房间数量
     private final int MaxROOMS= 20;
     private final int MINROOMS = 8;
-    public int roomNum;
-    public int roomsdis = 5;
+    public int roomNum ;
+    public int roomsdis = 8;
     private int area = roomsdis*roomsdis;
     //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
     private List<ROOM> ROOMS;
     //种子
     public Random rand;
+    //世界
+    public block[][]  Blockworld;
 
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
@@ -40,9 +42,12 @@ public class Engine {
        //根据s 处理
         if(s.equalsIgnoreCase("q")) return;
         //加载世界，自己创建的方块对象
-       block[][] Blockworld= loadWorld(s);
+        this.Blockworld= loadWorld(s);
+
        //最小图
-        if (!s.equalsIgnoreCase("n")) {
+        if (!s.equalsIgnoreCase("q")) {
+            //加载阻碍先
+            this.resetBlockingBlock();
             minGrap(Blockworld,this.ROOMS);
         }
 
@@ -113,7 +118,7 @@ public class Engine {
         long seed = Long.parseLong(s);
         this.rand = new Random(seed);
         //房间数量,后面不可实现时他会修改
-        this.roomNum = rand.nextInt(MaxROOMS - MINROOMS) + MINROOMS;
+        this.roomNum = rand.nextInt(MaxROOMS - MINROOMS) + MINROOMS ;
         return creatWorld(seed,rand);
     }
 
@@ -209,20 +214,29 @@ public class Engine {
 /**创建房间
  * */
 private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoom) {
-    int x = towDim.x - this.roomsdis / 2;
-    int y = towDim.y - this.roomsdis / 2;
-    int xLast = x + this.roomsdis;
-    int yLast = y + this.roomsdis;
+    // 随机宽度和高度，范围 [3, roomsdis]
+    int width = 3 + rand.nextInt(this.roomsdis - 2);
+    int height = 3 + rand.nextInt(this.roomsdis - 2);
+    int x = towDim.x - width / 2;
+    int y = towDim.y - height / 2;
+    int xLast = x + width;
+    int yLast = y + height;
+
+    // 边界裁剪（可选）
+    x = Math.max(0, x);
+    y = Math.max(0, y);
+    xLast = Math.min(this.WIDTH, xLast);
+    yLast = Math.min(this.HEIGHT, yLast);
+
     for (int i = y; i < yLast; i++) {
         for (int j = x; j < xLast; j++) {
-            world[j][i] = new spaceBlock(sigalRoom,j,i);
+            world[j][i] = new spaceBlock(sigalRoom, j, i);
             if (i == y || i == yLast - 1 || j == x || j == xLast - 1) {
-                boolean isWall = rand.nextInt(8) != 0; // 7/8 概率是墙
+                boolean isWall = rand.nextInt(8) != 0;
                 if (isWall) {
-                    world[j][i] = new WallBlock(sigalRoom,j,i);
-                    world[j][i].room = sigalRoom;
+                    world[j][i] = new WallBlock(sigalRoom, j, i);
                 } else {
-                    world[j][i] = new flowerBlock(sigalRoom,j,i);
+                    world[j][i] = new flowerBlock(sigalRoom, j, i);
                 }
             }
         }
@@ -281,29 +295,88 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
         decorateAround(blocks,path);
     }
 
-/**对核心路径装饰，注，这个装饰可以走，之后会为装饰物周围，不如可被装饰墙覆盖，可被装饰墙覆盖的只有装饰方块与void方块，其余不可。堵塞方块不过比装饰方块修改了可变为空地为false且不可变为装饰方块
+/**对核心路径装饰，注，这个装饰可以走，之后会为装饰物周围，不如可被装饰墙覆盖,装饰墙只是不可通行，仍然可变空地，可被装饰，可被装饰墙覆盖装饰墙与void方块，其余不可。堵塞方块不过比装饰方块修改了可变为空地为false且不可变为装饰方块
  * */
     private void   decorateAround(block[][] blocks,DimDijkstraSP path){
+       //所有装饰方块
+        List<block> decorateCoordinates= new ArrayList<>();
+        //装饰墙厚度,不想设计这个厚度先为1
+        //int thickness = ((this.roomsdis +3-1)/3+1)/3;
         for(int[] coordinates:path.pathTo()){
             int x =coordinates[0];int y =coordinates[1];
             //可变为空地且不为path的有概率覆盖
-            for(int i=x-1;i<=x+1;i++){
-                for(int j = y-1;j <= y+1;j++){
+            for(int i=x-(this.roomsdis +3-1)/3;i<=x+1;i++){
+                for(int j = y-(this.roomsdis +3-1)/3;j <= y+1;j++){
+                    // 整数运算公式（推荐，高效且避免浮点）
+                    //对于正整数 a 和 b，向上取整公式为：
+                    //(a + b - 1) / b
                     if(i<0 ||i>=this.WIDTH||j<0||j>=this.HEIGHT)continue;
                     //不允许破坏核心路径
                     if(blocks[i][j].canBeDecorated() &&blocks[i][j].room<0 ){
+
+
                         //装饰物的房间号为
-                        if(rand.nextInt(2) == 1){
-                          //  blocks[i][j] =new flowerBlock(-10,i,j);
+                        if(rand.nextInt(10) == 1){
+                            blocks[i][j] =new decorateflowerBlock(i,j);
+                            decorateCoordinates.add( blocks[i][j]);
+                        }else {
+                            blocks[i][j] = new decorateSpaceblock(i,j);
+                            decorateCoordinates.add( blocks[i][j]);
                         }
 
                     }
                 }
             }
         }
+        //上下左右，可被装饰墙覆盖装饰墙与void方块
+        int[][] direct = new int[][]{{0,1},{0,-1},{-1,0},{1,0}};
+        //装饰完才能知道边缘，且内部填好，这样不会堵住出口才能填加
+        for(block decorateBlock:decorateCoordinates){
+           for(int[]d:direct){
+               int dx = decorateBlock.x +d[0];int dy =decorateBlock.y + d[1];
+               if(dx <0 ||dx>= WIDTH||dy <0 ||dy>= this.HEIGHT) continue;
+               if(blocks[dx][dy].becameDecorateWall){
+                   blocks[dx][dy] = new decorateWallBlock(dx,dy);
+               }
+
+
+           }
+
+        }
+
+
 
     }
+//插入堵塞方块,只能覆盖虚空
+    private void resetBlockingBlock(){
+        //一个地点多少,不一定有这么多，有随机性
+        int radu =3;
+        //随机几个 1到8个
+        int blockingNum = this.rand.nextInt(8-1)+1;
+        int i=0;
+        //方向
+        int[][] direct= new int[][]{{0,1},{0,-1},{-1,0},{1,0}};
+        while(i < blockingNum){
+            int x = this.rand.nextInt(this.WIDTH);
+            int y = this.rand.nextInt(this.HEIGHT);
+            if(!this.Blockworld[x][y].getName().equals(voidBlock.Name)) continue;
+            i++;
+           // this.Blockworld[x][y] = 堵塞
+            for(int j= x - radu;j<=x+radu;j++){
+                    for(int k =y -radu;k<= y+radu;k++){
+                        if(j <0 ||j>= WIDTH||k <0 ||k>= this.HEIGHT) continue;
+                        if(!this.Blockworld[j][k].getName().equals(voidBlock.Name)) continue;
+                        if(this.rand.nextInt(3)==2){
+                            this.Blockworld[j][k]= new BlockingBlock(j,k);
+                        }
+                    }
 
+            }
+
+        }
+
+
+    }
 
     /**
      * 用于自动批改和测试您代码的方法。输入的字符串将是一个字符序列（例如，“n123sswwdasdassadwas”、“n123sss：q”、“lwww”。
@@ -320,10 +393,33 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
      * @返回值：表示世界状态的二维 TETile[][] 数组*/
     //接收一个指令字符串，返回处理完所有指令后的世界状态 (TETile[][])，用于自动评分。
     public TETile[][] interactWithInputString(String input) {
-        // TODO：请完善此方法，使其使用作为参数传入的输入来运行引擎，并返回一个二维的图块表示形式，该表示形式代表了如果将相同的输入传递给 interactWithKeyboard() 函数时将会绘制出的世界画面。//
-// 请参阅 proj3.byow.InputDemo 示例，了解如何创建一个美观简洁的界面，该界面能够适用于多种不同的输入类型。
+        // 1. 解析输入，提取 seed
+        input = input.toUpperCase();
+        if (input.startsWith("N")) {
+            int sIndex = input.indexOf('S');
+            if (sIndex == -1) return null; // 输入不合法
+            String seedStr = input.substring(1, sIndex);
+            long seed = Long.parseLong(seedStr);
 
-        TETile[][] finalWorldFrame = null;
-        return finalWorldFrame;
+            // 2. 用这个 seed 生成世界
+            this.rand = new Random(seed);
+            this.ROOMS = new ArrayList<>();
+            this.roomNum = rand.nextInt(MaxROOMS - MINROOMS) + MINROOMS;
+            this.Blockworld = creatWorld(seed, this.rand);
+
+            // 3. 如果你需要阻塞方块和走廊（Phase 1 要求世界必须完整，走廊和房间都要有）
+            resetBlockingBlock();
+            minGrap(Blockworld, ROOMS);
+
+            // 4. 转换成 TETile[][]
+            TETile[][] worldTiles = new TETile[WIDTH][HEIGHT];
+            for (int x = 0; x < WIDTH; x++) {
+                for (int y = 0; y < HEIGHT; y++) {
+                    worldTiles[x][y] = Blockworld[x][y].blockName;
+                }
+            }
+            return worldTiles;
+        }
+        return null; // 如果输入不是 N...S
     }
 }
