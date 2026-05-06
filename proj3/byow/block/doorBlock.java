@@ -4,6 +4,7 @@ package byow.block;
 import byow.TileEngine.Tileset;
 
 public class doorBlock extends block {
+    public static String Name = "Door";
     public doorBlock(int x,int y){
         super();
         this.blockName = Tileset.SAND;
@@ -12,8 +13,13 @@ public class doorBlock extends block {
         this.room =-1;
         this.x = x;
         this.y =y;
-        this.Name = "Door";
+
+        this.isanopenspace = true;
     }
+    public String getName(){
+        return Name;
+    }
+
 
 
 }

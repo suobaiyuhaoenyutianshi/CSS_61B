@@ -6,6 +6,7 @@ import byow.TileEngine.Tileset;
 import java.util.Random;
 
 public class spaceBlock extends block{
+    public static String Name =  "SPACEBlock";
     public spaceBlock(int room,int x,int y){
         super();
         this.blood= 0;
@@ -18,6 +19,12 @@ public class spaceBlock extends block{
         this.room = room;
         this.x = x;
         this.y =y;
-        this.Name = "SPACEBlock";
+
+    }
+    public String getName(){
+        return Name;
+    }
+    public boolean canBeDecorated(){
+        return true;
     }
 }

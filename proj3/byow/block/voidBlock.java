@@ -3,6 +3,7 @@ package byow.block;
 import byow.TileEngine.Tileset;
 
 public class voidBlock extends block{
+    public static String Name = "void";
     public voidBlock(int x,int y){
         super();
         this.blockName = Tileset.NOTHING;
@@ -13,6 +14,15 @@ public class voidBlock extends block{
         this.isanopenspace =true;
         this.x = x;
         this.y =y;
-        this.Name ="void";
+        //可变为装饰墙
+        this.becameDecorateWall = true;
+
     }
+    public String getName(){
+        return Name;
+    }
+    public boolean canBeDecorated(){
+        return true;
+    }
+
 }

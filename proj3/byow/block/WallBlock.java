@@ -4,6 +4,7 @@ import byow.TileEngine.Tileset;
 
 
 public class WallBlock extends block {
+    public static String Name = "Wall";
     public WallBlock(int room,int x,int y){
         super();
         this.blood= 2;
@@ -14,6 +15,10 @@ public class WallBlock extends block {
         this.room =room;
         this.x = x;
         this.y =y;
-        this.Name = "Wall";
+
     }
+    public String getName(){
+        return Name;
+    }
+
 }

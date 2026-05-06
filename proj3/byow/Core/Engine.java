@@ -2,7 +2,7 @@ package byow.Core;
 
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
-import byow.TileEngine.Tileset;
+//import byow.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
 import byow.block.*;
 import java.awt.*;
@@ -26,6 +26,8 @@ public class Engine {
     private int area = roomsdis*roomsdis;
     //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
     private List<ROOM> ROOMS;
+    //种子
+    public Random rand;
 
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
@@ -109,7 +111,7 @@ public class Engine {
 
         //创建型世界
         long seed = Long.parseLong(s);
-        Random rand = new Random(seed);
+        this.rand = new Random(seed);
         //房间数量,后面不可实现时他会修改
         this.roomNum = rand.nextInt(MaxROOMS - MINROOMS) + MINROOMS;
         return creatWorld(seed,rand);
@@ -266,10 +268,40 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
         for(int[]coordinates:path.pathTo()){
             //先全部变为空地试试
             int x =coordinates[0];int y =coordinates[1];
-            //房间序号
-            int room = blocks[x][y].room;
-            blocks[x][y] = new spaceBlock(room,x,y);
+            /// 返回的路径要么是可变为空地，要么是可变门的墙且为它的房间将序号为目标两地的其中一个，我的设计例只允许墙变为门,/
+            if (blocks[x][y].getName().equals(WallBlock.Name)) {
+                blocks[x][y] = new doorBlock(x, y);
+            } else if (blocks[x][y].getName().equals(voidBlock.Name)) {
+                //核心路径
+                blocks[x][y] = new PathVoidBlock( x, y);
+            }
+            //必须在核心路径形成后，否则会破坏它
+
         }
+        decorateAround(blocks,path);
+    }
+
+/**对核心路径装饰，注，这个装饰可以走，之后会为装饰物周围，不如可被装饰墙覆盖，可被装饰墙覆盖的只有装饰方块与void方块，其余不可。堵塞方块不过比装饰方块修改了可变为空地为false且不可变为装饰方块
+ * */
+    private void   decorateAround(block[][] blocks,DimDijkstraSP path){
+        for(int[] coordinates:path.pathTo()){
+            int x =coordinates[0];int y =coordinates[1];
+            //可变为空地且不为path的有概率覆盖
+            for(int i=x-1;i<=x+1;i++){
+                for(int j = y-1;j <= y+1;j++){
+                    if(i<0 ||i>=this.WIDTH||j<0||j>=this.HEIGHT)continue;
+                    //不允许破坏核心路径
+                    if(blocks[i][j].canBeDecorated() &&blocks[i][j].room<0 ){
+                        //装饰物的房间号为
+                        if(rand.nextInt(2) == 1){
+                          //  blocks[i][j] =new flowerBlock(-10,i,j);
+                        }
+
+                    }
+                }
+            }
+        }
+
     }
 
 

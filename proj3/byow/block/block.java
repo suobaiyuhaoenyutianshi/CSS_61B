@@ -10,7 +10,10 @@ import java.util.Random;
 public class block {
         //血量，名字
         //
-    public String Name;
+        //装饰物的房间号为  -10
+    //可变为装饰墙
+    public boolean becameDecorateWall;
+    public static String Name = "block";
      //是否可变为空地
     public boolean isanopenspace;
     //是否可以变为门
@@ -34,7 +37,16 @@ public class block {
             this.blockName = spaceArea[new Random().nextInt(2)];
         }
     }
- }
+    public String getName(){
+        return Name;
+    }
+    public boolean canBeDecorated(){
+        return false;
+    }
+    public boolean isBecameDecorateWall(){
+        return becameDecorateWall;
+    }
+}
 //////////////////////
 
 

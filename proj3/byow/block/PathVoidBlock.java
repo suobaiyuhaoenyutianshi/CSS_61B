@@ -3,14 +3,20 @@ package byow.block;
 import byow.TileEngine.Tileset;
 
 public class PathVoidBlock extends block{
-    public PathVoidBlock(){
+    public static String Name = "Path";
+    public PathVoidBlock(int x,int y){
         super();
-        this.blockName = Tileset.GRASS;
+        this.blockName = Tileset.UNLOCKED_DOOR;
         this.through = true;
         this.blood = Integer.MAX_VALUE;
         this.room = -3;//路径上的方块为房间-3
         this.price = 1;
         this.isanopenspace =true;
-        this.Name = "Path";
+
     }
+    public String getName(){
+        return Name;
+    }
+
+
 }
