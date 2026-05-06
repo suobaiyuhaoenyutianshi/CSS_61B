@@ -22,7 +22,7 @@ public class Engine {
     private final int MaxROOMS= 20;
     private final int MINROOMS = 8;
     public int roomNum ;
-    public int roomsdis = 8;
+    public int roomsdis = 10;
     private int area = roomsdis*roomsdis;
     //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
     private List<ROOM> ROOMS;

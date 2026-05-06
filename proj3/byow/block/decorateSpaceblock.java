@@ -12,7 +12,7 @@ public class decorateSpaceblock extends block{
             this.blood= 0;
             this.through = true;
             //空地
-            TETile[] spaceArea= new TETile[]{Tileset.GRASS,Tileset.FLOOR};
+            TETile[] spaceArea= new TETile[]{Tileset.GRASS,Tileset.deFLOOR};
             this.blockName = spaceArea[new Random().nextInt(2)];
             this.price = 1;
             this.isanopenspace = true;

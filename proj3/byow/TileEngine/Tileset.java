@@ -3,23 +3,25 @@ package byow.TileEngine;
 import java.awt.Color;
 
 /**
- * Contains constant tile objects, to avoid having to remake the same tiles in different parts of
- * the code.
- *
- * You are free to (and encouraged to) create and add your own tiles to this file. This file will
- * be turned in with the rest of your code.
- *
- * Ex:
- *      world[x][y] = Tileset.FLOOR;
- *
- * The style checker may crash when you try to style check this file due to use of unicode
- * characters. This is OK.
- */
+ * 包含固定的图块对象，以避免在代码的不同部分重复创建相同的图块。*
+ * 您可以自由地（并且被鼓励去）为这份文件添加您自己的图块。这份文件将与您的其他代码一并提交。*
+ * 示例：
+ *      world[x][y] = Tileset.FLOOR*
+ * 如果您尝试对此文件进行样式检查时出现错误，可能是由于使用了 Unicode 字符所致。这完全正常。*/
 
 public class Tileset {
     public static final TETile AVATAR = new TETile('@', Color.white, Color.black, "you");
     public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
             "wall");
+
+    public static final TETile deFLOOR = new TETile('·', new Color(128, 170, 192), Color.black,
+            "decoratefloor");
+    public static final TETile decorateWALL = new TETile('#', new Color(194, 216, 128), Color.darkGray,
+            "decoratewall");
+
+
+
+
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
             "floor");
     public static final TETile NOTHING = new TETile(' ', Color.black, Color.black, "nothing");
@@ -33,6 +35,8 @@ public class Tileset {
     public static final TETile SAND = new TETile('▒', Color.yellow, Color.black, "sand");
     public static final TETile MOUNTAIN = new TETile('▲', Color.gray, Color.black, "mountain");
     public static final TETile TREE = new TETile('♠', Color.green, Color.black, "tree");
+
+
 }
 
 

@@ -8,7 +8,7 @@ public class decorateWallBlock extends block{
         super();
         this.blood= 2;
         this.through = false;
-        this.blockName = Tileset.WALL;
+        this.blockName = Tileset.decorateWALL;
         this.price = 2;
         this.room =-10;
         this.x = x;
