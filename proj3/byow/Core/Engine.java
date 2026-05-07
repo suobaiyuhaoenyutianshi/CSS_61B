@@ -22,7 +22,7 @@ public class Engine {
     private final int MaxROOMS= 20;
     private final int MINROOMS = 8;
     public int roomNum ;
-    public int roomsdis = 10;
+    public int roomsdis = 5;
     private int area = roomsdis*roomsdis;
     //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
     private List<ROOM> ROOMS;
@@ -214,7 +214,7 @@ public class Engine {
 /**创建房间
  * */
 private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoom) {
-    // 随机宽度和高度，范围 [3, roomsdis]
+    // 随机宽度和高度，范围 [3, roomsdis]，因为文档要求3为最小
     int width = 3 + rand.nextInt(this.roomsdis - 2);
     int height = 3 + rand.nextInt(this.roomsdis - 2);
     int x = towDim.x - width / 2;
@@ -222,7 +222,7 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
     int xLast = x + width;
     int yLast = y + height;
 
-    // 边界裁剪（可选）
+    // 边界裁剪
     x = Math.max(0, x);
     y = Math.max(0, y);
     xLast = Math.min(this.WIDTH, xLast);

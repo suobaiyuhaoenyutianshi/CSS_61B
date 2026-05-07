@@ -14,13 +14,17 @@ public class Tileset {
     public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
             "wall");
 
-    public static final TETile deFLOOR = new TETile('·', new Color(128, 170, 192), Color.black,
+    public static final TETile deFLOOR = new TETile('·', new Color(128, 170, 192), Color.orange,
             "decoratefloor");
-    public static final TETile decorateWALL = new TETile('#', new Color(194, 216, 128), Color.darkGray,
+
+    public static final TETile decorateWALL = new TETile('#', new Color(128, 156, 216), Color.darkGray,
             "decoratewall");
+    public static final TETile deGRASS = new TETile('"', Color.green, Color.yellow, "grass");
+    public static final TETile deUNLOCKED_DOOR = new TETile('▢', Color.orange, Color.green,
+            "unlocked door");
 
-
-
+    public static final TETile myUNLOCKED_DOOR = new TETile('^', Color.orange, Color.WHITE,
+            "unlocked door");
 
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
             "floor");
