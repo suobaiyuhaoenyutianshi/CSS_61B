@@ -3,6 +3,7 @@ package byow.Core;
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 //import byow.TileEngine.Tileset;
+import byow.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
 import byow.block.*;
 import java.awt.*;
@@ -15,14 +16,14 @@ import byow.role;
 public class Engine {
     TERenderer ter = new TERenderer();
     /* 您可以随意更改宽度和高度。*/
-    public static final int WIDTH = 80;
-    public static final int HEIGHT = 40;
+    public static final int WIDTH = 200;
+    public static final int HEIGHT = 200;
     public TETile[][] world;
 //每个世界房间数量
     private final int MaxROOMS= 20;
     private final int MINROOMS = 4;
     public int roomNum ;
-    public int roomsdis = 5;
+    public int roomsdis = 30;
     private int area = roomsdis*roomsdis;
     //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
     private List<ROOM> ROOMS;
@@ -30,7 +31,11 @@ public class Engine {
     public Random rand;
     //世界
     public block[][]  Blockworld;
-
+    private int viewW = 80;   // 屏幕显示的格子数
+    private int viewH = 40;
+    private int camX = 0;     // 摄像机左下角在世界中的 X 坐标
+    private int camY = 0;     // 摄像机左下角在世界中的 Y 坐标
+    // 初始偏移：让玩家位于视口中心
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
@@ -59,30 +64,37 @@ public class Engine {
         //覆盖让主角登场
         this.Blockworld[me.place.x][me.place.y] =me.role;
         // 视口大小（窗口显示的瓦片数，可调）
-        int viewW = this.WIDTH;
-        int viewH = this.HEIGHT;
-        // 初始偏移：让玩家位于视口中心
+        if (camX < 0) camX = 0;
+        if (camY < 0) camY = 0;
+        if (camX > WIDTH - viewW) camX = WIDTH - viewW;
+        if (camY > HEIGHT - viewH) camY = HEIGHT - viewH;
+        // 初始摄像机位置
+        camX = Math.max(0, me.place.x - viewW / 2);
+        camY = Math.max(0, me.place.y - viewH / 2);
         int xOffset = Math.max(0, Math.min(me.place.x - viewW / 2, WIDTH - viewW));
         int yOffset = Math.max(0, Math.min(me.place.y - viewH / 2, HEIGHT - viewH));
-        ter.initialize(viewW, viewH, xOffset, yOffset);
+
+
+        ter.initialize(viewW, viewH);   // 不需要偏移参数了
         while (true) {
             rendergraph(Blockworld);
             StdDraw.pause(100);
-            //接受上下左右移动的命令
-            String c =null ;
-            while (c ==null){
+
+            String c = null;
+            while (c == null) {
                 if (StdDraw.hasNextKeyTyped()) {
                     c = String.valueOf(StdDraw.nextKeyTyped());
                 }
             }
-          if(!c.equals("w")&&!c.equals("s")&&!c.equals("a")&&!c.equals("d"))continue;
-          if(c.equals("q")){
-              //保存还有角色
-              break;
-          }
-            //接受命令移动
-            move(c,me);
 
+            if (!c.equals("w") && !c.equals("s") && !c.equals("a") && !c.equals("d")) continue;
+            if (c.equals("q")) break;
+
+            move(c, me);
+
+            // 更新摄像机
+            camX = Math.max(0, Math.min(me.place.x - viewW / 2, WIDTH - viewW));
+            camY = Math.max(0, Math.min(me.place.y - viewH / 2, HEIGHT - viewH));
         }
 
 
@@ -180,16 +192,20 @@ public class Engine {
 
     /**只负责渲染，输入数组，渲染，什么颜色，内部逻辑都不归他管
      * */
-    private  void rendergraph(block[][] world){
-        int x = this.WIDTH;int y = this.HEIGHT;
-        TETile[][] Tworld = new TETile[x][y];
-        for(int i =0;i<x;i++){
-            for(int j =0;j<y;j++){
-                Tworld[i][j] = world[i][j].blockName;
+    private void rendergraph(block[][] world) {
+        TETile[][] viewport = new TETile[viewW][viewH];
+        for (int i = 0; i < viewW; i++) {
+            for (int j = 0; j < viewH; j++) {
+                int worldX = camX + i;
+                int worldY = camY + j;
+                if (worldX >= 0 && worldX < WIDTH && worldY >= 0 && worldY < HEIGHT) {
+                    viewport[i][j] = world[worldX][worldY].blockName;
+                } else {
+                    viewport[i][j] = Tileset.NOTHING;  // 超出世界的地方显示黑色虚空
+                }
             }
         }
-
-        this.ter.renderFrame(Tworld);
+        ter.renderFrame(viewport);
     }
     private  block[][] creatWorld(long seed,Random rand){
         block[][] world = new block[this.WIDTH][this.HEIGHT];
