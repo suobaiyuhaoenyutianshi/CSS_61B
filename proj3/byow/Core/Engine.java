@@ -23,7 +23,7 @@ public class Engine {
     private final int MaxROOMS= 20;
     private final int MINROOMS = 4;
     public int roomNum ;
-    public int roomsdis = 30;
+    public int roomsdis = 10;
     private int area = roomsdis*roomsdis;
     //房间寻找依靠，尤其它的坐标与序号，注：链表的0对应就是房间0，这类里面也有它的序号避免，你弄错
     private List<ROOM> ROOMS;
@@ -31,11 +31,13 @@ public class Engine {
     public Random rand;
     //世界
     public block[][]  Blockworld;
-    private int viewW = 80;   // 屏幕显示的格子数
+    private int viewW = 60;   // 屏幕显示的格子数
     private int viewH = 40;
     private int camX = 0;     // 摄像机左下角在世界中的 X 坐标
     private int camY = 0;     // 摄像机左下角在世界中的 Y 坐标
     // 初始偏移：让玩家位于视口中心
+    private int deadX =15;
+    private int deadY =15;
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
@@ -63,8 +65,10 @@ public class Engine {
         role me = new role(4,this.Blockworld[ROOMS.get(0).XLoc][ROOMS.get(0).Yloc]);
         //覆盖让主角登场
         this.Blockworld[me.place.x][me.place.y] =me.role;
+        camX = Math.max(0, me.place.x - viewW / 2);
+        camY = Math.max(0, me.place.y - viewH / 2);
         // 视口大小（窗口显示的瓦片数，可调）
-        if (camX < 0) camX = 0;
+     /**   if (camX < 0) camX = 0;
         if (camY < 0) camY = 0;
         if (camX > WIDTH - viewW) camX = WIDTH - viewW;
         if (camY > HEIGHT - viewH) camY = HEIGHT - viewH;
@@ -74,7 +78,7 @@ public class Engine {
         int xOffset = Math.max(0, Math.min(me.place.x - viewW / 2, WIDTH - viewW));
         int yOffset = Math.max(0, Math.min(me.place.y - viewH / 2, HEIGHT - viewH));
 
-
+*/
         ter.initialize(viewW, viewH);   // 不需要偏移参数了
         while (true) {
             rendergraph(Blockworld);
@@ -91,11 +95,24 @@ public class Engine {
             if (c.equals("q")) break;
 
             move(c, me);
+            // ====== 死区更新摄像机（只在这里更新一次） ======
+            int centerX = camX + viewW / 2;
+            int centerY = camY + viewH / 2;
+            int dx = me.place.x - centerX;
+            int dy = me.place.y - centerY;
+            if (Math.abs(dx) > deadX) {
+                camX += (dx > 0) ? (Math.abs(dx) - deadX) : -(Math.abs(dx) - deadX);
+            }
+            if (Math.abs(dy) > deadY) {
+                camY += (dy > 0) ? (Math.abs(dy) - deadY) : -(Math.abs(dy) - deadY);
+            }
+            // 边界限制
+            if (camX < 0) camX = 0;
+            if (camY < 0) camY = 0;
+            if (camX > WIDTH - viewW) camX = WIDTH - viewW;
+            if (camY > HEIGHT - viewH) camY = HEIGHT - viewH;
 
-            // 更新摄像机
-            camX = Math.max(0, Math.min(me.place.x - viewW / 2, WIDTH - viewW));
-            camY = Math.max(0, Math.min(me.place.y - viewH / 2, HEIGHT - viewH));
-        }
+         }
 
 
     }
