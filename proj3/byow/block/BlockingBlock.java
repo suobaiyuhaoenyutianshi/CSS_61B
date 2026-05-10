@@ -5,7 +5,7 @@ import byow.TileEngine.Tileset;
 public class BlockingBlock extends block{
     public static String Name = "decorateflowerBlock";
     public BlockingBlock(int x,int y){
-        this.through =true;this.blood=0;this.blockName = Tileset.MOUNTAIN;
+        this.through =false;this.blood=0;this.blockName = Tileset.MOUNTAIN;
         this.price = 3;
         this.room = -110;
         this.x = x;

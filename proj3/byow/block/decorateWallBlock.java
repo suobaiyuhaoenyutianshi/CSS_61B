@@ -3,7 +3,8 @@ package byow.block;
 import byow.TileEngine.Tileset;
 
 public class decorateWallBlock extends block{
-    public static String Name = "Wall";
+
+    public static String Name = "deWall";
     public decorateWallBlock(int x,int y){
         super();
         this.blood= 2;
@@ -13,13 +14,15 @@ public class decorateWallBlock extends block{
         this.room =-10;
         this.x = x;
         this.y =y;
-        this.becameDecorateWall =true;//因为路可能交叉
+        this.becameDecorateWall =false;//因为路可能交叉
         this.isanopenspace =true;//因为路可能交叉
 
     }
     public String getName(){
         return Name;
     }
-
+    public boolean canBeDecorated(){
+        return true;
+    }
 
 }

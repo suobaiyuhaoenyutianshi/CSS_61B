@@ -19,15 +19,13 @@ public class decorateSpaceblock extends block{
             this.room = -10;//装饰方块都是-10
             this.x = x;
             this.y =y;
-
+            this.becameDecorateWall = false;
 
         }
         public String getName(){
             return Name;
         }
-        public boolean canBeDecorated(){
-            return true;
-        }
+
 
 
 }

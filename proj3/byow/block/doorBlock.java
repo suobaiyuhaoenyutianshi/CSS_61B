@@ -7,7 +7,7 @@ public class doorBlock extends block {
     public static String Name = "Door";
     public doorBlock(int x,int y){
         super();
-        this.blockName = Tileset.SAND;
+        this.blockName = Tileset.deUNLOCKED_DOOR;
         this.blood =0;
         through = true;
         this.room =-1;

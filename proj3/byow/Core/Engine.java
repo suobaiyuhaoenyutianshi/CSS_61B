@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import byow.graph.*;
-
+import byow.role;
 public class Engine {
     TERenderer ter = new TERenderer();
     /* 您可以随意更改宽度和高度。*/
@@ -20,7 +20,7 @@ public class Engine {
     public TETile[][] world;
 //每个世界房间数量
     private final int MaxROOMS= 20;
-    private final int MINROOMS = 8;
+    private final int MINROOMS = 4;
     public int roomNum ;
     public int roomsdis = 5;
     private int area = roomsdis*roomsdis;
@@ -53,13 +53,68 @@ public class Engine {
 
         //渲染
 
-            rendergraph(Blockworld);
+           // rendergraph(Blockworld);
+        //角色 //生成在一个房子中间
+        role me = new role(4,this.Blockworld[ROOMS.get(0).XLoc][ROOMS.get(0).Yloc]);
+        //覆盖让主角登场
+        this.Blockworld[me.place.x][me.place.y] =me.role;
+        // 视口大小（窗口显示的瓦片数，可调）
+        int viewW = this.WIDTH;
+        int viewH = this.HEIGHT;
+        // 初始偏移：让玩家位于视口中心
+        int xOffset = Math.max(0, Math.min(me.place.x - viewW / 2, WIDTH - viewW));
+        int yOffset = Math.max(0, Math.min(me.place.y - viewH / 2, HEIGHT - viewH));
+        ter.initialize(viewW, viewH, xOffset, yOffset);
         while (true) {
-            StdDraw.pause(1000);       // 保持窗口不关闭，不重复渲染
+            rendergraph(Blockworld);
+            StdDraw.pause(100);
+            //接受上下左右移动的命令
+            String c =null ;
+            while (c ==null){
+                if (StdDraw.hasNextKeyTyped()) {
+                    c = String.valueOf(StdDraw.nextKeyTyped());
+                }
+            }
+          if(!c.equals("w")&&!c.equals("s")&&!c.equals("a")&&!c.equals("d"))continue;
+          if(c.equals("q")){
+              //保存还有角色
+              break;
+          }
+            //接受命令移动
+            move(c,me);
+
         }
 
 
     }
+
+    public void move(String c,role me){
+        //上下左右
+      int[][] Direct = new int[][]{{0,1},{0,-1},{-1,0},{1,0}};
+      int[] move={0,0} ;
+      if(c.equals("w")){
+          move = Direct[0];
+      }else if (c.equals("s")) move = Direct[1];
+      else if (c.equals("a")) move = Direct[2];
+      else if(c.equals("d")) move = Direct[3];
+      int x =me.place.x + move[0];
+      int y =me.place.y + move[1];
+      if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT) return;
+      //角色记录信息,恢复复原原先地方
+
+      me.record(Blockworld[x][y],this.Blockworld);
+
+
+
+    }
+
+
+
+
+
+
+
+
 
     private static String  menu(){
         String s = null;
@@ -133,7 +188,7 @@ public class Engine {
                 Tworld[i][j] = world[i][j].blockName;
             }
         }
-        ter.initialize(this.WIDTH,this.HEIGHT);
+
         this.ter.renderFrame(Tworld);
     }
     private  block[][] creatWorld(long seed,Random rand){
@@ -288,6 +343,10 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
             } else if (blocks[x][y].getName().equals(voidBlock.Name)) {
                 //核心路径
                 blocks[x][y] = new PathVoidBlock( x, y);
+            }else if(blocks[x][y].room<0) {
+                // 其他任何出现在路径上的方块，也强制换成 PathVoidBlock
+                // 这样就不会留任何可装饰的尾巴
+                blocks[x][y] = new PathVoidBlock(x, y);
             }
             //必须在核心路径形成后，否则会破坏它
 
@@ -312,7 +371,7 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
                     //(a + b - 1) / b
                     if(i<0 ||i>=this.WIDTH||j<0||j>=this.HEIGHT)continue;
                     //不允许破坏核心路径
-                    if(blocks[i][j].canBeDecorated() &&blocks[i][j].room<0 ){
+                    if(blocks[i][j].canBeDecorated() &&blocks[i][j].room<0 &&!blocks[i][j].getName().equals(PathVoidBlock.Name)){
 
 
                         //装饰物的房间号为
@@ -377,6 +436,9 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
 
 
     }
+
+
+
 
     /**
      * 用于自动批改和测试您代码的方法。输入的字符串将是一个字符序列（例如，“n123sswwdasdassadwas”、“n123sss：q”、“lwww”。
