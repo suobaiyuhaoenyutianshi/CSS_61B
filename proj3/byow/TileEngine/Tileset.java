@@ -10,7 +10,7 @@ import java.awt.Color;
  * 如果您尝试对此文件进行样式检查时出现错误，可能是由于使用了 Unicode 字符所致。这完全正常。*/
 
 public class Tileset {
-    public static final TETile AVATAR = new TETile('@', Color.white, Color.black, "you");
+    public static final TETile AVATAR = new TETile('@', Color.white, Color.BLUE, "you");
     public static final TETile WALL = new TETile('#', new Color(216, 128, 128), Color.darkGray,
             "wall");
 

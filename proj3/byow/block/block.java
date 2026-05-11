@@ -27,6 +27,8 @@ public class block {
     //坐标
     public int x;
     public int y;
+    //是否揭露
+    public boolean revealed = false;
     public void hurt(int x){
         if(x<=0) return;//这样不会使门变为为0时变为空地
         if((blood - x) <= 0){
