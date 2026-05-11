@@ -43,6 +43,8 @@ public class Engine {
      * 包括来自主菜单的输入。*/
     //迷雾显示半径
     public int mistyRadius = 7;
+    //道路大小
+    private int pathThick = 15;
     public void interactWithKeyboard() {
         //房间
         ROOMS = new ArrayList<>();
@@ -427,8 +429,8 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
         for(int[] coordinates:path.pathTo()){
             int x =coordinates[0];int y =coordinates[1];
             //可变为空地且不为path的有概率覆盖
-            for(int i=x-(this.roomsdis +3-1)/3;i<=x+1;i++){
-                for(int j = y-(this.roomsdis +3-1)/3;j <= y+1;j++){
+            for(int i=x-this.pathThick/2;i<=x+pathThick/2;i++){
+                for(int j = y-this.pathThick/2;j <=y+ this.pathThick/2;j++){
                     // 整数运算公式（推荐，高效且避免浮点）
                     //对于正整数 a 和 b，向上取整公式为：
                     //(a + b - 1) / b
