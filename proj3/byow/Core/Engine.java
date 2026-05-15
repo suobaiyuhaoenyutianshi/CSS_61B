@@ -38,6 +38,8 @@ public class Engine {
     // 初始偏移：让玩家位于视口中心
     private int deadX =15;
     private int deadY =15;
+    //主角
+    private role me;
     /**
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
@@ -55,8 +57,8 @@ public class Engine {
         //加载世界，自己创建的方块对象
         this.Blockworld= loadWorld(s);
 
-       //最小图
-        if (!s.equalsIgnoreCase("q")) {
+       //最小图:生成非加载
+        if (!s.equalsIgnoreCase("q")&&!s.equalsIgnoreCase("l")) {
             //加载阻碍先
             this.resetBlockingBlock();
             minGrap(Blockworld,this.ROOMS);
@@ -65,10 +67,15 @@ public class Engine {
         //渲染
 
            // rendergraph(Blockworld);
+
         //角色 //生成在一个房子中间
-        role me = new role(4,this.Blockworld[ROOMS.get(0).XLoc][ROOMS.get(0).Yloc]);
+        if(!s.equalsIgnoreCase("l")){
+            this.me = new role(4,this.Blockworld[ROOMS.get(0).XLoc][ROOMS.get(0).Yloc]);
+        }
+
         //覆盖让主角登场
         this.Blockworld[me.place.x][me.place.y] =me.role;
+
         camX = Math.max(0, me.place.x - viewW / 2);
         camY = Math.max(0, me.place.y - viewH / 2);
         //初始显示周边
@@ -136,8 +143,9 @@ public class Engine {
       int y =me.place.y + move[1];
       if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT) return;
       //角色记录信息,恢复复原原先地方
-      revealAround(me);
+
       me.record(Blockworld[x][y],this.Blockworld);
+        revealAround(me);
       //移动显示周边
 
 
