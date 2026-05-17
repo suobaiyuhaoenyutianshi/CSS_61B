@@ -1,5 +1,6 @@
 package byow.Core;
-
+import java.io.*;
+import java.util.Scanner;
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 //import byow.TileEngine.Tileset;
@@ -15,13 +16,14 @@ import byow.graph.*;
 import byow.role;
 public class Engine {
     TERenderer ter = new TERenderer();
+    private long currentSeed;
     /* 您可以随意更改宽度和高度。*/
     public static final int WIDTH = 200;
     public static final int HEIGHT = 200;
     public TETile[][] world;
 //每个世界房间数量
     private final int MaxROOMS= 100;
-    private final int MINROOMS = 4;
+    private final int MINROOMS = 20;
     public int roomNum ;
     public int roomsdis = 10;
     private int area = roomsdis*roomsdis;
@@ -44,7 +46,7 @@ public class Engine {
      * 用于探索全新世界的探索方法。此方法应能处理所有输入内容，
      * 包括来自主菜单的输入。*/
     //迷雾显示半径
-    public int mistyRadius = 7;
+    public int mistyRadius = 20;
     //道路大小
     private int pathThick = 15;
     public void interactWithKeyboard() {
@@ -52,34 +54,43 @@ public class Engine {
         ROOMS = new ArrayList<>();
         //菜单N 表示“新世界”，L 表示“加载世界”，Q 表示退出。
         String s = menu();
-       //根据s 处理
-        if(s.equalsIgnoreCase("q")) return;
+        boolean loaded = false;
+        if (s.equalsIgnoreCase("l")) {
+            loaded = loadWorldFromFile();
+            if (!loaded) {
+                System.out.println("没有存档，请新建世界。");
+                return; // 或者继续等待新操作
+            }
+        }
+
         //加载世界，自己创建的方块对象
-        this.Blockworld= loadWorld(s);
+        if (!loaded) {
+            this.Blockworld = loadWorld(s);
 
-       //最小图:生成非加载
-        if (!s.equalsIgnoreCase("q")&&!s.equalsIgnoreCase("l")) {
-            //加载阻碍先
-            this.resetBlockingBlock();
-            minGrap(Blockworld,this.ROOMS);
+            //最小图:生成非加载
+            if (!s.equalsIgnoreCase("q") && !s.equalsIgnoreCase("l")) {
+                //加载阻碍先
+                this.resetBlockingBlock();
+                minGrap(Blockworld, this.ROOMS);
+            }
+
+            //渲染
+
+            // rendergraph(Blockworld);
+
+            //角色 //生成在一个房子中间
+            if (!s.equalsIgnoreCase("l")) {
+                this.me = new role(4, this.Blockworld[ROOMS.get(0).XLoc][ROOMS.get(0).Yloc]);
+            }
+
+            //覆盖让主角登场
+            this.Blockworld[me.place.x][me.place.y] = me.role;
         }
-
-        //渲染
-
-           // rendergraph(Blockworld);
-
-        //角色 //生成在一个房子中间
-        if(!s.equalsIgnoreCase("l")){
-            this.me = new role(4,this.Blockworld[ROOMS.get(0).XLoc][ROOMS.get(0).Yloc]);
-        }
-
-        //覆盖让主角登场
-        this.Blockworld[me.place.x][me.place.y] =me.role;
-
         camX = Math.max(0, me.place.x - viewW / 2);
         camY = Math.max(0, me.place.y - viewH / 2);
         //初始显示周边
         revealAround(me);
+
         // 视口大小（窗口显示的瓦片数，可调）
      /**   if (camX < 0) camX = 0;
         if (camY < 0) camY = 0;
@@ -95,20 +106,38 @@ public class Engine {
         ter.initialize(viewW, viewH);   // 不需要偏移参数了
         while (true) {
             rendergraph(Blockworld);
-            StdDraw.pause(100);
+           recoverAround(me);//只能使周边能看到，
 
+
+            StdDraw.pause(10);//帧率
+            if (me.moveCooldown > 0) {
+                me.moveCooldown--;   // 冷却中，每帧减1，减到0为止
+            }
             String c = null;
-            while (c == null) {
+          if (me.moveCooldown==0&&c== null) {
                 if (StdDraw.hasNextKeyTyped()) {
                     c = String.valueOf(StdDraw.nextKeyTyped());
                 }
             }
+            // 在 while 循环内，处理输入部分
+            if (c!=null&&(c.equals("q") || c.equals("Q"))) {
+                saveWorld();
+                System.exit(0);//关闭整个程序
+                return;//这没用了
 
-            if (!c.equals("w") && !c.equals("s") && !c.equals("a") && !c.equals("d")) continue;
-            if (c.equals("q")) break;
+            }
+// 如果主菜单按 L，则在 interactWithKeyboard 开头调用 loadWorldFromFile() 并设置标志跳过生成。
+            if(c!=null){
+                if (!c.equals("w") && !c.equals("s") && !c.equals("a") && !c.equals("d")) continue;
+                if (c.equals("q")) break;
+                move(c, me);
+            }
 
-            move(c, me);
-            // 死区更新摄像机（只在这里更新一次）
+
+
+
+
+            // 死区更新摄像机
             int centerX = camX + viewW / 2;
             int centerY = camY + viewH / 2;
             int dx = me.place.x - centerX;
@@ -131,6 +160,7 @@ public class Engine {
     }
 
     public void move(String c,role me){
+        if(c==null)return;
         //上下左右
       int[][] Direct = new int[][]{{0,1},{0,-1},{-1,0},{1,0}};
       int[] move={0,0} ;
@@ -145,6 +175,7 @@ public class Engine {
       //角色记录信息,恢复复原原先地方
 
       me.record(Blockworld[x][y],this.Blockworld);
+       me.moveCooldown=10;//恢复
         revealAround(me);
       //移动显示周边
 
@@ -170,6 +201,18 @@ public class Engine {
             }
         }
 
+
+
+    }
+    private void recoverAround(role me){
+
+        for(int x=me.place.x - this.mistyRadius;x <=me.place.x + this.mistyRadius ;x++){
+            for(int y= me.place.y-this.mistyRadius;y<=me.place.y+this.mistyRadius;y++){
+                if(x<0||x>=this.WIDTH||y<0||y>=this.HEIGHT)continue;
+                if(x==me.place.x&&y==me.place.y)continue;
+                this.Blockworld[x][y].revealed = false;
+            }
+        }
 
 
     }
@@ -201,6 +244,9 @@ public class Engine {
             StdDraw.pause(50);               // 短暂休眠，避免 CPU 空转
         }
         StdDraw.clear();
+        if(s.equalsIgnoreCase("l")){
+            return "l";
+        }
         if(s.equalsIgnoreCase("N")){
 
             String k = "";char c = 0;
@@ -238,6 +284,7 @@ public class Engine {
         this.rand = new Random(seed);
         //房间数量,后面不可实现时他会修改
         this.roomNum = rand.nextInt(MaxROOMS - MINROOMS) + MINROOMS ;
+        this.currentSeed = seed;   // seed 是你解析出来的 long 值
         return creatWorld(seed,rand);
     }
 
@@ -267,6 +314,7 @@ public class Engine {
     private  block[][] creatWorld(long seed,Random rand){
         block[][] world = new block[this.WIDTH][this.HEIGHT];
         //初始
+
         initWorld(world);
 
 
@@ -484,7 +532,7 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
         //一个地点多少,不一定有这么多，有随机性
         int radu =3;
         //随机几个 1到8个
-        int blockingNum = this.rand.nextInt(8-1)+1;
+        int blockingNum = this.rand.nextInt(19-1)+1;
         int i=0;
         //方向
         int[][] direct= new int[][]{{0,1},{0,-1},{-1,0},{1,0}};
@@ -511,8 +559,174 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
     }
 
 
+// ... 在 Engine 类内部 ...
 
+    /**
+     * 保存当前世界状态到文件 "save.txt"
+     * 格式：[HEADER] / [PLAYER_GROUND] / [BEGIN_WORLD] ... [END_WORLD]
+     */
+    private void saveWorld() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("save.txt"))) {
+            // --- 头部信息 ---
 
+            writer.write("[HEADER]");
+            writer.newLine();
+            writer.write("seed=" + this.currentSeed);  // 注意：rand 对象不能用这种方式保存种子，需要额外记录种子值。
+            writer.newLine();
+            writer.write("playerX=" + me.place.x);
+            writer.newLine();
+            writer.write("playerY=" + me.place.y);
+            writer.newLine();
+
+            // --- 玩家脚下原方块状态 ---
+            writer.write("[PLAYER_GROUND]");
+            writer.newLine();
+            String groundState = me.place.SaveState();  // 玩家脚下的方块（被覆盖前的那个）
+            writer.write("LENGTH=" + groundState.length());
+            writer.newLine();
+            writer.write(groundState);
+            writer.newLine();
+
+            // --- 世界网格 ---
+            writer.write("[BEGIN_WORLD]");
+            writer.newLine();
+            for (int y = 0; y < HEIGHT; y++) {
+                for (int x = 0; x < WIDTH; x++) {
+                    block b = Blockworld[x][y];
+                    if (b == me.role) {  // 角色占据的格子，保存为玩家脚下的原方块
+                        b = me.place;
+                    }
+                    String state = b.SaveState();
+                    writer.write("LENGTH=" + state.length());
+                    writer.newLine();
+                    writer.write(state);
+                    writer.newLine();
+                }
+            }
+            writer.write("[END_WORLD]");
+            writer.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 从 "save.txt" 加载世界，重建 block[][] 并恢复角色状态。
+     * 返回 true 表示加载成功，false 表示文件不存在或格式错误。
+     */
+    private boolean loadWorldFromFile() {
+        File file = new File("save.txt");
+        if (!file.exists()) return false;
+
+        try (Scanner scanner = new Scanner(file)) {
+            String line = null;
+            long seed = 0;
+            int playerX = -1, playerY = -1;
+            String playerGroundState = null;
+
+            // 1. 读头部
+            while (scanner.hasNextLine() && !"[PLAYER_GROUND]".equals(line)) {
+                line = scanner.nextLine();
+                if (line.startsWith("seed=")) {
+                    seed = Long.parseLong(line.substring(5));
+                    this.currentSeed = seed;
+                }
+
+                else if (line.startsWith("playerX=")) playerX = Integer.parseInt(line.substring(8));
+                else if (line.startsWith("playerY=")) playerY = Integer.parseInt(line.substring(8));
+            }
+            // 2. 读玩家脚下原方块
+            while (scanner.hasNextLine() && !"[BEGIN_WORLD]".equals(line)) {
+                if (line.startsWith("LENGTH=")) {
+                    int len = Integer.parseInt(line.substring(7));
+                    if (scanner.hasNextLine()) {
+                        playerGroundState = scanner.nextLine();
+                    }
+                }
+                line = scanner.hasNextLine() ? scanner.nextLine() : "";
+            }
+            // 3. 重建基础世界
+            // 3. 重建世界——不再依赖种子，直接分配空数组
+            this.rand = new Random(seed);
+            this.ROOMS = new ArrayList<>();
+            this.roomNum = rand.nextInt(MaxROOMS - MINROOMS) + MINROOMS;
+            this.Blockworld = creatWorld(seed, rand);
+            resetBlockingBlock();
+            minGrap(Blockworld, ROOMS);
+
+            // 4. 覆盖世界网格数据
+            int xIdx = 0, yIdx = 0;
+            while (scanner.hasNextLine() && !"[END_WORLD]".equals(line)) {
+                line = scanner.nextLine();
+                if (line.startsWith("LENGTH=")) {
+                    int len = Integer.parseInt(line.substring(7));
+                    if (scanner.hasNextLine()) {
+                        String stateLine = scanner.nextLine();
+                        // 从 stateLine 提取类型名并创建对应方块
+                        String typeName = extractValue(stateLine, "type");
+                        block loadedBlock = blockFactory(typeName, xIdx, yIdx);
+                        if (loadedBlock != null) {
+                            loadedBlock.loadState(stateLine);
+                            Blockworld[xIdx][yIdx] = loadedBlock;
+                        }
+                    }
+                    xIdx++;
+                    if (xIdx == WIDTH) {
+                        xIdx = 0;
+                        yIdx++;
+                    }
+                }
+            }
+            // 5. 恢复角色
+            if (playerX >= 0 && playerY >= 0 && playerGroundState != null) {
+                block groundBlock = blockFactory(extractValue(playerGroundState, "type"), playerX, playerY);
+                if (groundBlock != null) {
+                    groundBlock.loadState(playerGroundState);
+                    this.me = new role(4, groundBlock);
+                    Blockworld[playerX][playerY] = me.role;
+                    revealAround(me);
+                }
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 从类似 "type=Wall,room=1,..." 的字符串中提取 key 对应的 value
+     */
+    private String extractValue(String data, String key) {
+        String[] pairs = data.split(",");
+        for (String pair : pairs) {
+            String[] kv = pair.split("=", 2);
+            if (kv.length == 2 && kv[0].trim().equals(key)) {
+                return kv[1].trim();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 根据类型名和坐标创建对应的方块对象（工厂方法）
+     */
+    private block blockFactory(String typeName, int x, int y) {
+        switch (typeName) {
+            case "Wall":   return new WallBlock(0, x, y);    // room 会在 loadState 中恢复
+            case "SPACEBlock": return new spaceBlock(0, x, y);
+            case "void":   return new voidBlock(x, y);
+            case "Path":   return new PathVoidBlock(x, y);
+            case "Door":   return new doorBlock(x, y);
+            case "Flower": return new flowerBlock(0, x, y);
+            case "blockingBlock": return new BlockingBlock(x, y);
+            case "decorateSpaceblock": return new decorateSpaceblock(x, y);
+            case "decorateflowerBlock": return new decorateflowerBlock(x,y);
+            case "deWall": return new decorateWallBlock(x, y);
+            default: return null;
+        }
+    }
     /**
      * 用于自动批改和测试您代码的方法。输入的字符串将是一个字符序列（例如，“n123sswwdasdassadwas”、“n123sss：q”、“lwww”。
      * 该引擎应表现得如同用户使用 interactWithKeyboard 将这些字符输入到引擎中一样。*

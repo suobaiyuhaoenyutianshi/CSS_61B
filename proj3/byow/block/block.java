@@ -82,6 +82,8 @@ public class block {
                 case "room":   this.room = Integer.parseInt(V); break;
                 case "blood":  this.blood = Integer.parseInt(V); break;
                 case "through": this.through = Boolean.parseBoolean(V); break;
+
+
                 case "isanopenspace": this.isanopenspace = Boolean.parseBoolean(V); break;
                 case "BecameDoor": this.BecameDoor = Boolean.parseBoolean(V); break;
                 case "price":  this.price = Integer.parseInt(V); break;

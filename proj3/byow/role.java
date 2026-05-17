@@ -8,6 +8,7 @@ public class role {
     public block role;
     //储存现在的位置，离开时要依靠这个复原
     public block place;
+    public int moveCooldown = 10;
     public role(int blood,block place){
         this.blood = blood;
         this.role= new roleappearance() ;
