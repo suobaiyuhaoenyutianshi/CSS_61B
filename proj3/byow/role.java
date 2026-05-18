@@ -10,6 +10,7 @@ public class role {
     public int speedNum=4 ;//多走4步(默认)
     public int temporaryspped=0;
     public int speedFrame =0;
+    public boolean weapon =true;//是否有武器
     //储存现在的位置，离开时要依靠这个复原
     public block place;
     public int moveCooldown =20;

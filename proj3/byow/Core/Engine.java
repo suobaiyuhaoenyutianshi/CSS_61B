@@ -134,7 +134,7 @@ public class Engine {
                      //改成无代价   me.moveCooldown++;//来解决撞墙不停的问题,为什么加，这是不让它撞墙代价莫名消失
                         c=null;
                     }
-                }
+        ddd        }else me.burstFinish=true;//
 
             }
 
@@ -217,9 +217,14 @@ public class Engine {
        me.moveCooldown=this.moveCooldown;//恢复
          revealAround(me);
       //移动显示周边
-        //加速
-        if(me.speedFrame >0){
-            me.moveCooldown=10;
+        //设计这两个主要受制于操作系统接受不一致
+        //这是不按下，加速期间
+     dd   if(me.speedFrame >0&&me.burstFinish==false){
+            me.moveCooldown=2;
+        }
+        //这是按下键盘的加速期间，
+     dd   else if(me.speedFrame >0&&me.burstFinish==true){
+            me.moveCooldown=10000;
         }
         if(me.temporaryspped>=me.speedNum||me.speedFrame<=0){
             me.temporaryspped=0;
