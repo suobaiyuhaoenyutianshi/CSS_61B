@@ -20,6 +20,7 @@ public class decorateSpaceblock extends block{
             this.x = x;
             this.y =y;
             this.becameDecorateWall = false;
+            this.destroy = false;//不可破坏
 
         }
         public String getName(){

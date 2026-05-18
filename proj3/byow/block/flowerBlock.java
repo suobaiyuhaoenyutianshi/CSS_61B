@@ -11,6 +11,7 @@ public class flowerBlock extends block{
         this.x = x;
         this.y =y;
         this.isanopenspace =true;
+        this.destroy = false;
     }
     public String getName(){
         return Name;

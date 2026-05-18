@@ -26,6 +26,9 @@ public class Tileset {
     public static final TETile myUNLOCKED_DOOR = new TETile('^', Color.orange, Color.WHITE,
             "unlocked door");
 
+
+    public static final TETile Speeed = new TETile('~', Color.orange, Color.green,
+            "speed");
     public static final TETile FLOOR = new TETile('·', new Color(128, 192, 128), Color.black,
             "floor");
     public static final TETile NOTHING = new TETile(' ', Color.black, Color.black, "nothing");

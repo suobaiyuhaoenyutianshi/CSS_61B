@@ -12,6 +12,8 @@ public class block {
         //
         //装饰物的房间号为  -10
     //可变为装饰墙
+    //可破坏的
+    public boolean destroy = true;
     public boolean becameDecorateWall;
     public static String Name = "block";
      //是否可变为空地
@@ -61,7 +63,9 @@ public class block {
                 ",revealed=" + revealed +
                 ",becameDecorateWall=" + becameDecorateWall+
                 ",x"+ this.x+
-                ",y" + this.y;
+                ",y" + this.y+
+                ",destroy" + this.destroy;
+
 
 
     }
@@ -83,7 +87,7 @@ public class block {
                 case "blood":  this.blood = Integer.parseInt(V); break;
                 case "through": this.through = Boolean.parseBoolean(V); break;
 
-
+                case  "destroy": this.destroy = Boolean.parseBoolean(V);break;
                 case "isanopenspace": this.isanopenspace = Boolean.parseBoolean(V); break;
                 case "BecameDoor": this.BecameDoor = Boolean.parseBoolean(V); break;
                 case "price":  this.price = Integer.parseInt(V); break;
@@ -91,6 +95,7 @@ public class block {
                 case "becameDecorateWall": this.becameDecorateWall = Boolean.parseBoolean(V); break;
                 case "x": this.x = Integer.parseInt(V); break;
                 case "y": this.y = Integer.parseInt(V); break;
+
                 // type 字段在创建对象时已经确定
             }
         }

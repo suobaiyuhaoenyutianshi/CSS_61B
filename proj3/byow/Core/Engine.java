@@ -15,6 +15,7 @@ import java.util.Random;
 import byow.graph.*;
 import byow.role;
 public class Engine {
+    private final int moveCooldown=10;//注意要跟role类里面设计的一样
     TERenderer ter = new TERenderer();
     private long currentSeed;
     /* 您可以随意更改宽度和高度。*/
@@ -102,35 +103,60 @@ public class Engine {
         int xOffset = Math.max(0, Math.min(me.place.x - viewW / 2, WIDTH - viewW));
         int yOffset = Math.max(0, Math.min(me.place.y - viewH / 2, HEIGHT - viewH));
 
-*/
-        ter.initialize(viewW, viewH);   // 不需要偏移参数了
+*/      String[] dire = null;
+        ter.initialize(viewW, viewH);// 不需要偏移参数了
         while (true) {
+
             rendergraph(Blockworld);
-           recoverAround(me);//只能使周边能看到，
+
+
+
 
 
             StdDraw.pause(10);//帧率
+            if(me.speedFrame>0){
+                me.speedFrame--;
+            }
+
             if (me.moveCooldown > 0) {
                 me.moveCooldown--;   // 冷却中，每帧减1，减到0为止
             }
             String c = null;
           if (me.moveCooldown==0&&c== null) {
                 if (StdDraw.hasNextKeyTyped()) {
+
                     c = String.valueOf(StdDraw.nextKeyTyped());
+                    if(c!=null){
+                        me.burstFinish=false;//解决加速
+                    }
+                    if(dire!=null&&dire[0].equals("F")&&dire[1].equals(c))
+                    {
+                     //改成无代价   me.moveCooldown++;//来解决撞墙不停的问题,为什么加，这是不让它撞墙代价莫名消失
+                        c=null;
+                    }
                 }
+
             }
-            // 在 while 循环内，处理输入部分
+
             if (c!=null&&(c.equals("q") || c.equals("Q"))) {
                 saveWorld();
                 System.exit(0);//关闭整个程序
                 return;//这没用了
 
             }
+            //加速的循环
+            if(dire!=null&&me.speedFrame>0&&c==null&&me.temporaryspped <me.speedNum&&me.burstFinish==false){
+                c = dire[1];
+                me.temporaryspped++;
+            }
 // 如果主菜单按 L，则在 interactWithKeyboard 开头调用 loadWorldFromFile() 并设置标志跳过生成。
             if(c!=null){
                 if (!c.equals("w") && !c.equals("s") && !c.equals("a") && !c.equals("d")) continue;
                 if (c.equals("q")) break;
-                move(c, me);
+
+                dire=move(c, me);
+
+
             }
 
 
@@ -158,9 +184,10 @@ public class Engine {
 
 
     }
+//返回先前
+    public String[] move(String c,role me){
 
-    public void move(String c,role me){
-        if(c==null)return;
+
         //上下左右
       int[][] Direct = new int[][]{{0,1},{0,-1},{-1,0},{1,0}};
       int[] move={0,0} ;
@@ -169,21 +196,42 @@ public class Engine {
       }else if (c.equals("s")) move = Direct[1];
       else if (c.equals("a")) move = Direct[2];
       else if(c.equals("d")) move = Direct[3];
+      int oldX= me.place.x;
+      int oldY = me.place.y;
       int x =me.place.x + move[0];
       int y =me.place.y + move[1];
-      if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT) return;
+      if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT) return new String[]{"Ext","Ext"};
+      boolean through =me.record(Blockworld[x][y],this.Blockworld);
+     /** if(through){
+          recoverAround(oldX,oldY);//只能使周边能看到，把未移动前的位置覆盖
+      }*/
       //角色记录信息,恢复复原原先地方
+        //是否移动了
 
-      me.record(Blockworld[x][y],this.Blockworld);
-       me.moveCooldown=10;//恢复
-        revealAround(me);
+     if(!through){
+          me.moveCooldown=0;//this.moveCooldown;//不减速，你要减速，把这注释去掉 +10;//碰到阻碍物 ，减速
+         me.temporaryspped=0;
+         me.burstFinish=true;
+          return new String[]{"F",c};
+      }
+       me.moveCooldown=this.moveCooldown;//恢复
+         revealAround(me);
       //移动显示周边
+        //加速
+        if(me.speedFrame >0){
+            me.moveCooldown=10;
+        }
+        if(me.temporaryspped>=me.speedNum||me.speedFrame<=0){
+            me.temporaryspped=0;
+            me.burstFinish=true;
+        }
 
-
+        return new String[]{"T",c};
 
     }
 
     private void revealAround(role me){
+
         for(int x=me.place.x - this.mistyRadius;x <=me.place.x + this.mistyRadius ;x++){
             for(int y= me.place.y-this.mistyRadius;y<=me.place.y+this.mistyRadius;y++){
                 if(x<0||x>=this.WIDTH||y<0||y>=this.HEIGHT)continue;
@@ -204,10 +252,11 @@ public class Engine {
 
 
     }
-    private void recoverAround(role me){
+    private void recoverAround(int oldX,int oldY){
 
-        for(int x=me.place.x - this.mistyRadius;x <=me.place.x + this.mistyRadius ;x++){
-            for(int y= me.place.y-this.mistyRadius;y<=me.place.y+this.mistyRadius;y++){
+
+        for(int x=oldX - this.mistyRadius;x <=oldX + this.mistyRadius ;x++){
+            for(int y= oldY-this.mistyRadius;y<=oldY+this.mistyRadius;y++){
                 if(x<0||x>=this.WIDTH||y<0||y>=this.HEIGHT)continue;
                 if(x==me.place.x&&y==me.place.y)continue;
                 this.Blockworld[x][y].revealed = false;
@@ -499,7 +548,10 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
                         if(rand.nextInt(10) == 1){
                             blocks[i][j] =new decorateflowerBlock(i,j);
                             decorateCoordinates.add( blocks[i][j]);
-                        }else {
+                        } else if (this.rand.nextInt(100)==1) {
+                            blocks[i][j] =new speedBlock(i,j);
+                            decorateCoordinates.add( blocks[i][j]);//之前不应该给它命名装饰收集
+                        } else {
                             blocks[i][j] = new decorateSpaceblock(i,j);
                             decorateCoordinates.add( blocks[i][j]);
                         }
@@ -517,6 +569,8 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
                if(dx <0 ||dx>= WIDTH||dy <0 ||dy>= this.HEIGHT) continue;
                if(blocks[dx][dy].becameDecorateWall){
                    blocks[dx][dy] = new decorateWallBlock(dx,dy);
+
+
                }
 
 

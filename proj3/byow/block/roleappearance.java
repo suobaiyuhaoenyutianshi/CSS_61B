@@ -6,5 +6,6 @@ public class roleappearance extends block{
     public roleappearance(){
         this.blockName = Tileset.AVATAR;
         this.revealed = true;
+        this.destroy= false;
     }
 }

@@ -19,6 +19,7 @@ public class spaceBlock extends block{
         this.room = room;
         this.x = x;
         this.y =y;
+        this.destroy = false;
 
     }
     public String getName(){

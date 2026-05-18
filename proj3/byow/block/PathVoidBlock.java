@@ -14,6 +14,7 @@ public class PathVoidBlock extends block{
         this.isanopenspace =true;
         this.x=x;
         this.y =y;
+        this.destroy= false;
 
     }
     public String getName(){
