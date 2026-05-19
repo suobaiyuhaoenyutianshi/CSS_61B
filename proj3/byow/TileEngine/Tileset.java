@@ -25,6 +25,12 @@ public class Tileset {
 
     public static final TETile myUNLOCKED_DOOR = new TETile('^', Color.orange, Color.WHITE,
             "unlocked door");
+    public static final TETile Bullet= new TETile('o', Color.BLACK, Color.orange,
+            "Bullet");
+    public static final TETile destroyShow= new TETile('*', Color.BLACK, Color.red,
+            "destroyShow");
+    public static final TETile destroyTrough= new TETile( ' ', Color.ORANGE, Color.red,
+            "destroyTrough");
 
 
     public static final TETile Speeed = new TETile('~', Color.orange, Color.green,

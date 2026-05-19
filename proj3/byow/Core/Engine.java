@@ -1,6 +1,8 @@
 package byow.Core;
 import java.io.*;
-import java.util.Scanner;
+import java.util.*;
+
+import byow.Bullet;
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 //import byow.TileEngine.Tileset;
@@ -8,13 +10,14 @@ import byow.TileEngine.Tileset;
 import edu.princeton.cs.introcs.StdDraw;
 import byow.block.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
+
 import byow.graph.*;
 import byow.role;
+import byow.Bullet.*;
 public class Engine {
+    //子弹管理
+    public List<Bullet> Bullets =new ArrayList<>();
     private final int moveCooldown=10;//注意要跟role类里面设计的一样
     TERenderer ter = new TERenderer();
     private long currentSeed;
@@ -41,6 +44,7 @@ public class Engine {
     // 初始偏移：让玩家位于视口中心
     private int deadX =15;
     private int deadY =15;
+    //
     //主角
     private role me;
     /**
@@ -106,13 +110,14 @@ public class Engine {
 */      String[] dire = null;
         ter.initialize(viewW, viewH);// 不需要偏移参数了
         while (true) {
-
+            //管理子弹,放后面，子弹，别动这个好好想
+            updateBullets();
             rendergraph(Blockworld);
 
 
 
 
-
+//
             StdDraw.pause(10);//帧率
             if(me.speedFrame>0){
                 me.speedFrame--;
@@ -122,19 +127,56 @@ public class Engine {
                 me.moveCooldown--;   // 冷却中，每帧减1，减到0为止
             }
             String c = null;
+            //武器不一定移动，与角色的移动冷却无关，只是与角色的朝向与子弹的冷却，一定要放这后面的c有很多用处，被到处修改，你使用完也得变为null,后面键盘在接受，你也不想发射与角色待注吧，虽然估计没影响
+          /**  if (StdDraw.hasNextKeyTyped()) {
+
+                String p = String.valueOf(StdDraw.nextKeyTyped());
+                if(p.equalsIgnoreCase("p")&&me.weapon){
+                    int Mex = me.place.x;int MeY = me.place.y;
+                    //子弹位置
+                    int BulletX=Mex+me.faceX;int BulletY =MeY +me.faceY;
+                    //
+                    if(BulletX > 0&&BulletX<this.WIDTH&&BulletY>0 &&BulletY<this.HEIGHT){
+                        if(Blockworld[BulletX][BulletY].destroy){
+                            //直接破环该格不传
+                            Blockworld[BulletX][BulletY] = new decorateflowerBlock(BulletX,BulletY);
+                        }else{
+                            Bullet newBullet = new Bullet(Blockworld[BulletX][BulletY],me.place.x,me.place.y,me.faceX,me.faceY,Blockworld);
+                            this.Bullets.add(newBullet);
+                        }
+
+
+                    }
+                }else {
+                    c = p;   // 方向键交给原来的移动系统
+                }
+
+            }*/
+            //复原
+
+
+
+
+
+
+
           if (me.moveCooldown==0&&c== null) {
                 if (StdDraw.hasNextKeyTyped()) {
 
                     c = String.valueOf(StdDraw.nextKeyTyped());
-                    if(c!=null){
-                        me.burstFinish=false;//解决加速
+                    //子弹发射是视为，在处理后设为null
+                    if(!c.equals("p")){
+                        me.burstFinish=false;//解决加速，按下方向键，剩余加速，结束,子弹发射不是方向键
                     }
-                    if(dire!=null&&dire[0].equals("F")&&dire[1].equals(c))
+
+
+
+                    if(dire!=null&&dire[0].equals("F")&&dire[1].equals(c)&&!c.equals("p"))
                     {
                      //改成无代价   me.moveCooldown++;//来解决撞墙不停的问题,为什么加，这是不让它撞墙代价莫名消失
                         c=null;
                     }
-        ddd        }else me.burstFinish=true;//
+                }
 
             }
 
@@ -144,8 +186,22 @@ public class Engine {
                 return;//这没用了
 
             }
-            //加速的循环
-            if(dire!=null&&me.speedFrame>0&&c==null&&me.temporaryspped <me.speedNum&&me.burstFinish==false){
+            //子弹创建，还是让子弹进去初始化自己解决
+            if(c!=null&&c.equals("p")){
+                //子弹位置
+                int Bx=me.place.x+me.faceX; int bY =me.place.y+me.faceY;
+                if((me.place.x+me.faceX)>0&&(me.place.x+me.faceX)<this.WIDTH&&(me.place.y+me.faceY)>0&&(me.place.y+me.faceY)<this.HEIGHT&&Blockworld[Bx][bY].destroy){
+                    Blockworld[Bx][bY] = new DestroyThrough(Bx,bY);
+                }
+                //前面就是可破坏物，或越界不可发射
+                if((me.place.x+me.faceX)>0&&(me.place.x+me.faceX)<this.WIDTH&&(me.place.y+me.faceY)>0&&(me.place.y+me.faceY)<this.HEIGHT&&!Blockworld[Bx][bY].destroy){
+                    Bullet newB = new Bullet(Blockworld[Bx][bY],Bx,bY,me.faceX,me.faceY,Blockworld);
+                    this.Bullets.add(newB);
+                }
+
+            }
+            //加速的循环                               //不让子弹加速影响加速
+            if(dire!=null&&me.speedFrame>0&&(c==null||c.equals("p"))&&me.temporaryspped <me.speedNum&&me.burstFinish==false&&me.moveCooldown==0){
                 c = dire[1];
                 me.temporaryspped++;
             }
@@ -155,6 +211,7 @@ public class Engine {
                 if (c.equals("q")) break;
 
                 dire=move(c, me);
+
 
 
             }
@@ -193,15 +250,22 @@ public class Engine {
       int[] move={0,0} ;
       if(c.equals("w")){
           move = Direct[0];
+
+
       }else if (c.equals("s")) move = Direct[1];
       else if (c.equals("a")) move = Direct[2];
       else if(c.equals("d")) move = Direct[3];
+        //角色更新朝向
+        me.faceX = move[0];me.faceY = move[1];
       int oldX= me.place.x;
       int oldY = me.place.y;
       int x =me.place.x + move[0];
       int y =me.place.y + move[1];
       if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT) return new String[]{"Ext","Ext"};
       boolean through =me.record(Blockworld[x][y],this.Blockworld);
+
+
+
      /** if(through){
           recoverAround(oldX,oldY);//只能使周边能看到，把未移动前的位置覆盖
       }*/
@@ -217,18 +281,23 @@ public class Engine {
        me.moveCooldown=this.moveCooldown;//恢复
          revealAround(me);
       //移动显示周边
+        if(me.temporaryspped<me.speedNum&&me.temporaryspped!=0){
+            me.isAutoStep=true;
+        }else me.isAutoStep =false;
         //设计这两个主要受制于操作系统接受不一致
         //这是不按下，加速期间
-     dd   if(me.speedFrame >0&&me.burstFinish==false){
+        if(me.speedFrame >0&&me.isAutoStep ==true){
             me.moveCooldown=2;
         }
         //这是按下键盘的加速期间，
-     dd   else if(me.speedFrame >0&&me.burstFinish==true){
-            me.moveCooldown=10000;
+        else if(me.speedFrame >0&&me.isAutoStep ==false){
+            me.moveCooldown=0;
         }
         if(me.temporaryspped>=me.speedNum||me.speedFrame<=0){
             me.temporaryspped=0;
             me.burstFinish=true;
+            me.moveCooldown =this.moveCooldown;//恢复  ;//当加速结束（speedFrame <= 0 或 temporaryspped >= speedNum）时，最后一次自动移动已经把 moveCooldown 设成了 20000，而自动循环此时已停止，不会再帮消耗这个冷却。
+            //于是主循环里 me.moveCooldown-- 要足足减 20000 帧才能归零
         }
 
         return new String[]{"T",c};
@@ -784,6 +853,26 @@ private void creatRoom(twoDim towDim, block[][] world, Random rand, int sigalRoo
             case "decorateflowerBlock": return new decorateflowerBlock(x,y);
             case "deWall": return new decorateWallBlock(x, y);
             default: return null;
+        }
+    }
+
+    //在渲染前更新子弹,创建时的问题不归它管
+    private void updateBullets(){
+        if(Bullets.isEmpty()){
+            return;
+        }
+        //删除对象
+       List<Bullet> removeObjS =new ArrayList<>();
+        for(Bullet Obj:this.Bullets){
+            Obj.moveCooldown++;
+            Obj.record(this.Blockworld,this.rand);
+            if(!Obj.isExist()){
+                //不存在删除
+                removeObjS.add(Obj);
+            }
+        }
+        for(Bullet o:removeObjS){
+            this.Bullets.remove(o);
         }
     }
     /**

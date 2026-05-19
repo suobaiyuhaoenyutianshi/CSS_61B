@@ -11,6 +11,7 @@ public class speedBlock extends block{
         this.through = true;this.x =x;this.y = y;
         this.speedFrame =300;
         this.blockName = Tileset.Speeed;
+        this.destroy =false;
 
     }
     public String getName(){

@@ -14,6 +14,9 @@ public class role {
     //储存现在的位置，离开时要依靠这个复原
     public block place;
     public int moveCooldown =20;
+    public boolean isAutoStep=false;//自动
+    //最后一次移动方向用于武器
+    public int faceX,faceY;
     public role(int blood,block place){
         this.blood = blood;
         this.role= new roleappearance() ;
@@ -21,7 +24,12 @@ public class role {
 
     }//恢复原先的位置，记录下次即将的位置,即之后的现在位置，且覆盖
     public boolean record(block nextPlace, block[][] world) {
-        if (!nextPlace.through) return false;                // 直接用目标方块判断
+        if (!nextPlace.through) return false;
+        // 直接用目标方块判断
+        //子弹问题
+       /** if(!world[this.place.x][this.place.y].getName().equals(BulletAppearance.Name)){
+
+        }*/
         world[this.place.x][this.place.y] = this.place; // 恢复原地
         this.place = nextPlace;
         if (nextPlace.getName().equals(speedBlock.Name)) {
